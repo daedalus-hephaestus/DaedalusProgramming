@@ -13606,77 +13606,29 @@ var programCode = function (processingInstance) {
 			new BagItem('brown bag', 'brown bag', 103, 32, 8);
 		} // items
 		{
-			new Screen(0, 0, 0, [
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaabbbbaaaaaaaa',
-				'aaaaaaaaaaaaaaaaabbaaaaa',
-				'aaaaaaaaabaaaaaaaabaaaaa',
-				'aaaaaaaaaaaaabbaaaaaaaaa',
-				'aaaaabbaaaaabbbabaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaabaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa'
-			], {
-				'enemy': [
-					{ 'name': 'slime', 'x': 4, 'y': 4 },
-					{ 'name': 'slime', 'x': 12, 'y': 8 },
-				],
-				"quest": [
-					{ 'name': 'Gerald', 'x': 5, 'y': 3 },
-					{ 'name': 'Steve', 'x': 7, 'y': 3 }
-				],
-				"interacting": [
-					{ 'name': 'booger', 'x': 9, 'y': 3 }
-				]
+			new Screen(x: 0, y: 0, z: 0, map: [
+				'$$$$$$$$$$$$$$$$$$$$$$$$',
+				'$$$!!!!!!!!!!!&&!!!!!$$$',
+				'$$!!!!!!!%&%%!!!!(($!!$$',
+				'$!!!###!%!$!&%!!!!$((!!$',
+				'$!!!$$!!&!%!$!!(!!&&(!&$',
+				'$!&!#$($(!%!!!$$(!!!!!!$',
+				'$&%!($(!%%!!!&(!(!!#!!!$',
+				'$!!!(!!%&!#$!&%!!!!#!!!$',
+				'$!!!!%(!!!#$$&&&!!!!!&$$',
+				'$!!#!%!!#!!##!!%%!!%&&!$',
+				'$!##!!!!%!!!!(!!$!!&$$!$',
+				'$!!!!$!!%!!(((!!#(&&$%!$',
+				'$!!!$$#$(%&%!!!##((!!!!$',
+				'$$!!!$$&&(&!!##!!!!!!!$$',
+				'$$$!!!!!!!!!!!!!!!!$!$$$',
+				'$$$$$$$$$$$$$$$$$$$$$$$$'], 
+				{
+					'enemies': [
+						{name: 'slime', x: 4, y: 4}
+					]
+				} 
 			});
-			new Screen(-1, 0, 0, [
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaabbaaaaaaaaabaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaabbaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaabaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaabaaabbbbaaa',
-				'aaaaaaaabbaaaaaaaabbaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa'
-			], {
-				'enemy': [
-					{ 'name': 'slime', 'x': 4, 'y': 4 },
-					{ 'name': 'slime', 'x': 12, 'y': 8 },
-				]
-			});
-			new Interior(0, 0, 0, 10, 9, 10, 7, 10, 3, [
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaabaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-				'aaaaaaaaaaaaaaaaaaaaaaaa',
-			]);
 		} // maps
 		{
 			new Ability('slash', 'damage', 'slash', 'humanUp', 20, 10, 3);
