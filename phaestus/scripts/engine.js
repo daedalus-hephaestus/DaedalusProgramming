@@ -761,6 +761,18 @@ var programCode = function (processingInstance) {
 							}
 						}
 						this.p = this.p.get(); // gets the canvas and exports it as an image
+						if (this.pixmap.length > TILE_SIZE) {
+							this.top = createGraphics(this.width, this.height - REAL_SIZE, JAVA2D);
+							this.top.background(pal[' ']);
+							this.top.noStroke();
+							for (var y = 0; y < this.pixmap.length - TILE_SIZE; y++) {
+								for (var x = 0; x < this.pixmap[y].length; x++) {
+									this.top.fill(pal[this.pixmap[y][x]]); // sets the color
+									this.top.rect(x * this.size, y * this.size, this.size, this.size); // draws the pixels
+								}
+							}
+							this.top = this.top.get();
+						}
 					} else {
 						this.colorKeys = Object.keys(this.colors); // creates an array with all of the color keys
 						this.p = [];
@@ -827,7 +839,7 @@ var programCode = function (processingInstance) {
 						for (var y = 0; y < tempImage.pixmap.length; y++) {
 							for (var x = 0; x < tempImage.pixmap[y].length; x++) {
 								this.p.fill(pal[tempImage.pixmap[y][x]]); // sets the color
-								this.p.rect(x * tempImage.size + j * this.width/2, y * tempImage.size + i * this.height/2, tempImage.size, tempImage.size); // draws the pixels
+								this.p.rect(x * tempImage.size + j * this.width / 2, y * tempImage.size + i * this.height / 2, tempImage.size, tempImage.size); // draws the pixels
 							}
 						}
 					}
@@ -8854,6 +8866,7 @@ var programCode = function (processingInstance) {
 				this.tiles = []; // stores the tiles
 				this.storedEntities = []; // stores the entities
 				this.animations = []; // stores the animations
+				this.tops = [];
 				if (World.maps[this.x] === undefined) {
 					World.maps[this.x] = [];
 				} // creates a new x array if it is not defined
@@ -8889,8 +8902,15 @@ var programCode = function (processingInstance) {
 									} else {
 										this.animations.push({
 											tile: b.image[i],
-											x: x * REAL_SIZE,
-											y: y * REAL_SIZE
+											x: x * REAL_SIZE - b.image[i].offset.x,
+											y: y * REAL_SIZE - b.image[i].offset.y
+										});
+									}
+									if (b.image[i].height > REAL_SIZE) {
+										this.tops.push({
+											tile: b.image[i],
+											x: x * REAL_SIZE - b.image[i].offset.x,
+											y: y * REAL_SIZE - b.image[i].offset.y
 										});
 									}
 								} else {
@@ -8909,12 +8929,20 @@ var programCode = function (processingInstance) {
 										y: y * REAL_SIZE
 									});
 								}
+								if (b.image.height > REAL_SIZE) {
+									this.tops.push({
+										tile: b.image,
+										x: x * REAL_SIZE - b.image.offset.x,
+										y: y * REAL_SIZE - b.image.offset.y
+									});
+								}
 							} else {
 								b.image.load();
 								println('image not loaded in map function: forced load');
 							}
 						}
 					}
+					console.log(this.tops);
 				}
 				var entityKeys = Object.keys(this.entities);
 				for (var i = 0; i < entityKeys.length; i++) {
@@ -9203,6 +9231,12 @@ var programCode = function (processingInstance) {
 					}
 				}
 			};
+			World.topDraw = function (x, y, z) {
+				var selMap = World.maps[x][y][z];
+				for(var i = 0; i < selMap.tops.length; i++) {
+					image(selMap.tops[i].tile.top, selMap.tops[i].x, selMap.tops[i].y);
+				}
+			}
 		} // map constructors
 
 		/*                      _       
@@ -9214,205 +9248,205 @@ var programCode = function (processingInstance) {
 		*/
 
 		{
-            new Image([
-                'GIHFGGIHGGHIFHIG',
-                'IHHFGIHFGGHIGFHG',
-                'HHFGIHHGIGHHIFHG',
-                'HFGGIHFGIGFHIGFG',
-                'FIGGHHFHHIGHHGGI',
-                'GHIGHFGHHIGFHGIH',
-                'GHIGHFHGHHGGFGIH',
-                'GFHIFGHGFHGIGGHH',
-                'GFHHGHFIGFGHGIHF',
-                'GGFHHFIHGGIHGHFI',
-                'IGFHHGIHGIHHFHFH',
-                'IGGFGIHFGIHFGFGH',
-                'HGGGGHHFIHHFIGGH',
-                'HGGIGHHGHHFGHIGF',
-                'HGIHGHFGHFGGHIGF',
-                'FIHHGFGGFGIGHHIG'], pal, 2, 'grass');
-            new Image([
-                '                ',
-                '       bbb      ',
-                '     bbccdb     ',
-                '    bcddcdb     ',
-                '    _bdcdddb    ',
-                '   _aabccdca    ',
-                '   _aabbccba    ',
-                '  _aababbbbba   ',
-                '  _aaaabbbbba   ',
-                '  _``aaababbba  ',
-                '  _```aabbbbba  ',
-                '   __``aabbaaa  ',
-                '     _```a___   ',
-                '      ____      ',
-                '                ',
-                '                '], pal, 2, 'rock');
-            new Image([
-                'jjjjjjjjjjjjjjjj',
-                'jjjjjjjjjjjjjjjj',
-                'jjjjjjjjjjjjjjjj',
-                'jjjjjjjjjjjjjjjj',
-                'jjjjjjjjjjjjjjjj',
-                'jjjjjjjjjjjjjjjj',
-                'jjjjjjjjjjjjjjjj',
-                'jjjjjjjjjjjjjjjj',
-                'jjjjjjjjjjjjjjjj',
-                'jjjjjjjjjjjjjjjj',
-                'jjjjjjjjjjjjjjjj',
-                'jjjjjjjjjjjjjjjj',
-                'jjjjjjjjjjjjjjjj',
-                'jjjjjjjjjjjjjjjj',
-                'jjjjjjjjjjjjjjjj',
-                'jjjjjjjjjjjjjjjj'], pal, 2, 'hole');
-            new Image([
-                '                ',
-                '      EEEE      ',
-                '     EGGGGE     ',
-                '    EFHIIHGE    ',
-                '    DFIIIIGD    ',
-                '   DGFHFIHHFE   ',
-                '   DHGFFHFHFD   ',
-                '   DHHGGFGFGD   ',
-                '  DEGEEHGEGHED  ',
-                '  DFEFEGEFEEFD  ',
-                '  DGFGFEFGFGGD  ',
-                ' DDGGFGFGFGGFDD ',
-                ' CDFGDGGFGDGDEC ',
-                ' CEDFDFDFGDFDEC ',
-                ' CFEDEDEDFDDECC ',
-                ' CCFEFEFEDEEFCC ',
-                ' CCFECEFFEFCECC ',
-                '  CDCECEECECCC  ',
-                '   CCDCECDCCC   ',
-                '    „CCCCCC„    ',
-                '  CCC……†………CCC  ',
-                ' CCCC„†…††„CCCC ',
-                '  CCCC„……„CCCC  ',
-                '    CCCCCCCC    '], pal, 2, 'treeA');
-            new Image([
-                '                ',
-                '                ',
-                '            ;   ',
-                '        PQQ A;  ',
-                '         PPP    ',
-                '        QPPOP   ',
-                '        PPO O   ',
-                '       DOO      ',
-                '        D       ',
-                '        C       ',
-                '    DDD  D      ',
-                '   DCCED C      ',
-                '   C  CED       ',
-                '       CD       ',
-                '       C        ',
-                '                '], pal, 2, 'purple flower a');
-            new Image([
-                '                ',
-                '                ',
-                ' ;              ',
-                ';A QQP          ',
-                '  PPP           ',
-                ' POPPQ     QQ Q ',
-                ' O OPP    OPPPP ',
-                '    OOD  D OPPO ',
-                '      CDD   OPA;',
-                '       C   OP ; ',
-                '        D       ',
-                '     DD E DD    ',
-                '    DEECDDCCD   ',
-                '    DCC  C  C   ',
-                '    C    C      ',
-                '                '], pal, 2, 'purple flower b');
-            new Image([
-                '                ',
-                '      EEEE      ',
-                '    EEGGGGEE    ',
-                '   EGGHIHHGGE   ',
-                '  EGFHIIIIHFGE  ',
-                '  DEGFHIHHFGEE  ',
-                ' DFEGGFHFFGEFFD ',
-                ' DEFEEGFEGEFFDD ',
-                ' DEFDFEGEEFDFED ',
-                ' CDEDFDEFDFDDDD ',
-                ' CCDEDEDDEDEECD ',
-                '  CCDEDEDDEDDC  ',
-                '  CCCDCDDCDCCC  ',
-                ' CCCCCCCCCCCCCC ',
-                '  CCCCCCCCCCCC  ',
-                '    CCCCCCCC    '], pal, 2, 'bush');
-            {
-                new Image([
-                    '+-./,...',
-                    '+/-./000',
-                    '+./-.///',
-                    '+-./,...',
-                    '+/-.,/00',
-                    '+.--,///',
-                    '+,-/,...',
-                    '+.,./000'], pal, 2, 'wall corner left a');
-                new Image([
-                    '+-.,////',
-                    '+,-.,---',
-                    '+.,-,.//',
-                    '+-,,,...',
-                    ' +,.,---',
-                    '  +-.///',
-                    '   +-...',
-                    '    +,,,'], pal, 2, 'wall corner left b');
-                new Image([
-                    '...,/.-+',
-                    '000/.-/+',
-                    '///.-/.+',
-                    '...,/.-+',
-                    '00/,.-/+',
-                    '///,--.+',
-                    '...,/-,+',
-                    '000/.,.+'], pal, 2, 'wall corner right a');
-                new Image([
-                    '////,.-+',
-                    '---,.-,+',
-                    '//.,-,.+',
-                    '...,,,-+',
-                    '---,.,+ ',
-                    '///.-+  ',
-                    '...-+   ',
-                    ',,,+    '], pal, 2, 'wall corner right b');
-                new Image([
-                    '........',
-                    '0/./0000',
-                    '//-/////',
-                    '.--.-...',
-                    '000000/.',
-                    '///////-',
-                    '......--',
-                    '0/./0000'], pal, 2, 'wall a');
-                new Image([
-                    '//-/////',
-                    '-,,-----',
-                    '//////.-',
-                    '.......-',
-                    '-------,',
-                    '/.-.////',
-                    '..,.....',
-                    ',,,,,,,,'], pal, 2, 'wall b');
-            } // wall meta tiles
-            new MetaImage('wall corner left a', 'wall a', 'wall corner left b', 'wall b', 'wall corner left');
-            new MetaImage('wall a', 'wall corner right a', 'wall b', 'wall corner right b', 'wall corner right');
-            new MetaImage('wall a', 'wall a', 'wall b', 'wall b', 'wall center');
-        } // block images
-        {
-            new Tile('grass', 'walkable', '!');
-            new Tile(['grass', 'rock'], 'solid', '#');
-            new Tile('hole', 'solid', ',');
-            new Tile(['grass', 'treeA'], 'solid', '$');
-            new Tile(['grass', 'purple flower a'], 'walkable', '%');
-            new Tile(['grass', 'purple flower b'], 'walkable', '&');
-            new Tile(['grass', 'bush'], 'solid', '(');
-            new Tile(['grass', 'wall corner left'], 'solid', ')');
-            new Tile('wall center', 'solid', '+');
-            new Tile(['grass', 'wall corner right'], 'solid', '*');
-        } // block tiles
+			new Image([
+				'GIHFGGIHGGHIFHIG',
+				'IHHFGIHFGGHIGFHG',
+				'HHFGIHHGIGHHIFHG',
+				'HFGGIHFGIGFHIGFG',
+				'FIGGHHFHHIGHHGGI',
+				'GHIGHFGHHIGFHGIH',
+				'GHIGHFHGHHGGFGIH',
+				'GFHIFGHGFHGIGGHH',
+				'GFHHGHFIGFGHGIHF',
+				'GGFHHFIHGGIHGHFI',
+				'IGFHHGIHGIHHFHFH',
+				'IGGFGIHFGIHFGFGH',
+				'HGGGGHHFIHHFIGGH',
+				'HGGIGHHGHHFGHIGF',
+				'HGIHGHFGHFGGHIGF',
+				'FIHHGFGGFGIGHHIG'], pal, 2, 'grass');
+			new Image([
+				'                ',
+				'       bbb      ',
+				'     bbccdb     ',
+				'    bcddcdb     ',
+				'    _bdcdddb    ',
+				'   _aabccdca    ',
+				'   _aabbccba    ',
+				'  _aababbbbba   ',
+				'  _aaaabbbbba   ',
+				'  _``aaababbba  ',
+				'  _```aabbbbba  ',
+				'   __``aabbaaa  ',
+				'     _```a___   ',
+				'      ____      ',
+				'                ',
+				'                '], pal, 2, 'rock');
+			new Image([
+				'jjjjjjjjjjjjjjjj',
+				'jjjjjjjjjjjjjjjj',
+				'jjjjjjjjjjjjjjjj',
+				'jjjjjjjjjjjjjjjj',
+				'jjjjjjjjjjjjjjjj',
+				'jjjjjjjjjjjjjjjj',
+				'jjjjjjjjjjjjjjjj',
+				'jjjjjjjjjjjjjjjj',
+				'jjjjjjjjjjjjjjjj',
+				'jjjjjjjjjjjjjjjj',
+				'jjjjjjjjjjjjjjjj',
+				'jjjjjjjjjjjjjjjj',
+				'jjjjjjjjjjjjjjjj',
+				'jjjjjjjjjjjjjjjj',
+				'jjjjjjjjjjjjjjjj',
+				'jjjjjjjjjjjjjjjj'], pal, 2, 'hole');
+			new Image([
+				'                ',
+				'      EEEE      ',
+				'     EGGGGE     ',
+				'    EFHIIHGE    ',
+				'    DFIIIIGD    ',
+				'   DGFHFIHHFE   ',
+				'   DHGFFHFHFD   ',
+				'   DHHGGFGFGD   ',
+				'  DEGEEHGEGHED  ',
+				'  DFEFEGEFEEFD  ',
+				'  DGFGFEFGFGGD  ',
+				' DDGGFGFGFGGFDD ',
+				' CDFGDGGFGDGDEC ',
+				' CEDFDFDFGDFDEC ',
+				' CFEDEDEDFDDECC ',
+				' CCFEFEFEDEEFCC ',
+				' CCFECEFFEFCECC ',
+				'  CDCECEECECCC  ',
+				'   CCDCECDCCC   ',
+				'    „CCCCCC„    ',
+				'  CCC……†………CCC  ',
+				' CCCC„†…††„CCCC ',
+				'  CCCC„……„CCCC  ',
+				'    CCCCCCCC    '], pal, 2, 'treeA');
+			new Image([
+				'                ',
+				'                ',
+				'            ;   ',
+				'        PQQ A;  ',
+				'         PPP    ',
+				'        QPPOP   ',
+				'        PPO O   ',
+				'       DOO      ',
+				'        D       ',
+				'        C       ',
+				'    DDD  D      ',
+				'   DCCED C      ',
+				'   C  CED       ',
+				'       CD       ',
+				'       C        ',
+				'                '], pal, 2, 'purple flower a');
+			new Image([
+				'                ',
+				'                ',
+				' ;              ',
+				';A QQP          ',
+				'  PPP           ',
+				' POPPQ     QQ Q ',
+				' O OPP    OPPPP ',
+				'    OOD  D OPPO ',
+				'      CDD   OPA;',
+				'       C   OP ; ',
+				'        D       ',
+				'     DD E DD    ',
+				'    DEECDDCCD   ',
+				'    DCC  C  C   ',
+				'    C    C      ',
+				'                '], pal, 2, 'purple flower b');
+			new Image([
+				'                ',
+				'      EEEE      ',
+				'    EEGGGGEE    ',
+				'   EGGHIHHGGE   ',
+				'  EGFHIIIIHFGE  ',
+				'  DEGFHIHHFGEE  ',
+				' DFEGGFHFFGEFFD ',
+				' DEFEEGFEGEFFDD ',
+				' DEFDFEGEEFDFED ',
+				' CDEDFDEFDFDDDD ',
+				' CCDEDEDDEDEECD ',
+				'  CCDEDEDDEDDC  ',
+				'  CCCDCDDCDCCC  ',
+				' CCCCCCCCCCCCCC ',
+				'  CCCCCCCCCCCC  ',
+				'    CCCCCCCC    '], pal, 2, 'bush');
+			{
+				new Image([
+					'+-./,...',
+					'+/-./000',
+					'+./-.///',
+					'+-./,...',
+					'+/-.,/00',
+					'+.--,///',
+					'+,-/,...',
+					'+.,./000'], pal, 2, 'wall corner left a');
+				new Image([
+					'+-.,////',
+					'+,-.,---',
+					'+.,-,.//',
+					'+-,,,...',
+					' +,.,---',
+					'  +-.///',
+					'   +-...',
+					'    +,,,'], pal, 2, 'wall corner left b');
+				new Image([
+					'...,/.-+',
+					'000/.-/+',
+					'///.-/.+',
+					'...,/.-+',
+					'00/,.-/+',
+					'///,--.+',
+					'...,/-,+',
+					'000/.,.+'], pal, 2, 'wall corner right a');
+				new Image([
+					'////,.-+',
+					'---,.-,+',
+					'//.,-,.+',
+					'...,,,-+',
+					'---,.,+ ',
+					'///.-+  ',
+					'...-+   ',
+					',,,+    '], pal, 2, 'wall corner right b');
+				new Image([
+					'........',
+					'0/./0000',
+					'//-/////',
+					'.--.-...',
+					'000000/.',
+					'///////-',
+					'......--',
+					'0/./0000'], pal, 2, 'wall a');
+				new Image([
+					'//-/////',
+					'-,,-----',
+					'//////.-',
+					'.......-',
+					'-------,',
+					'/.-.////',
+					'..,.....',
+					',,,,,,,,'], pal, 2, 'wall b');
+			} // wall meta tiles
+			new MetaImage('wall corner left a', 'wall a', 'wall corner left b', 'wall b', 'wall corner left');
+			new MetaImage('wall a', 'wall corner right a', 'wall b', 'wall corner right b', 'wall corner right');
+			new MetaImage('wall a', 'wall a', 'wall b', 'wall b', 'wall center');
+		} // block images
+		{
+			new Tile('grass', 'walkable', '!');
+			new Tile(['grass', 'rock'], 'solid', '#');
+			new Tile('hole', 'solid', ',');
+			new Tile(['grass', 'treeA'], 'solid', '$');
+			new Tile(['grass', 'purple flower a'], 'walkable', '%');
+			new Tile(['grass', 'purple flower b'], 'walkable', '&');
+			new Tile(['grass', 'bush'], 'solid', '(');
+			new Tile(['grass', 'wall corner left'], 'solid', ')');
+			new Tile('wall center', 'solid', '+');
+			new Tile(['grass', 'wall corner right'], 'solid', '*');
+		} // block tiles
 		{
 			new Image([
 				' _______________',
@@ -13736,10 +13770,10 @@ var programCode = function (processingInstance) {
 				'$!!!!$$!!$$$(!!!&%!#!!!$',
 				'$$!#!!!$!$($$!!#!$!!!!$$',
 				'$$$!!!!!!!!!!!!!!!!$!$$$',
-				'$$$$$$$$$$$$$$$$$$$$$$$$'], 
+				'$$$$$$$$$$$$$$$$$$$$$$$$'],
 				{
 					'enemy': [
-						{'name': 'slime', 'x': 3, 'y': 3}
+						{ 'name': 'slime', 'x': 3, 'y': 3 }
 					]
 				});
 		} // maps
@@ -13833,10 +13867,11 @@ var programCode = function (processingInstance) {
 			} else {
 				World.draw(Player['loc']['scene']['x'], Player['loc']['scene']['y'], Player['loc']['scene']['z']);
 				Player.movement();
+				Player.update();
+				World.topDraw(Player['loc']['scene']['x'], Player['loc']['scene']['y'], Player['loc']['scene']['z']);
 				Player['bar'].draw(0, height - REAL_SIZE);
 				Player['healthBar'].draw(0, 0, Player['stats']['curFortitude'], Player['stats']['fortitude'], Player['stats']['curEndurance'], Player['stats']['endurance'], Player['stats']['vitality'], Player['stats']['vigor'], Player['stats']['luck'], Player['stats']['strength'], Player['stats']['armor']);
 				Player['xpBar'].draw(0, 480);
-				Player.update();
 				drawAlerts();
 				fill(255, 0, 0);
 				textSize(16);
