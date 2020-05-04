@@ -13627,8 +13627,7 @@ var programCode = function (processingInstance) {
 					'enemies': [
 						{name: 'slime', x: 4, y: 4}
 					]
-				} 
-			});
+				});
 		} // maps
 		{
 			new Ability('slash', 'damage', 'slash', 'humanUp', 20, 10, 3);
