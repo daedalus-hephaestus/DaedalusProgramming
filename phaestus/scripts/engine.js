@@ -13606,7 +13606,7 @@ var programCode = function (processingInstance) {
 			new BagItem('brown bag', 'brown bag', 103, 32, 8);
 		} // items
 		{
-			new Screen(x: 0, y: 0, z: 0, map: [
+			new Screen(0, 0, 0, [
 				'$$$$$$$$$$$$$$$$$$$$$$$$',
 				'$$$!!!!!!!!!!!&&!!!!!$$$',
 				'$$!!!!!!!%&%%!!!!(($!!$$',
