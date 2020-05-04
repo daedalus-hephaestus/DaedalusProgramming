@@ -626,7 +626,6 @@ var programCode = function (processingInstance) {
 			for (var i = 0; i < tempKeys.length; i++) {
 				var dir = tempKeys[i];
 				var armorSlots = Object.keys(Player['animation']['armor']); // gets the names of all of the armor slots
-				console.log(armorSlots);
 				if (Player['loc']['facing'] === dir) {
 					if (Player['actions']['moving'][dir]) { // determines if the player is moving
 						images[Player['animation']['sprite'][dir]].draw(); // draws the correct sprite based upon the direction
@@ -2176,7 +2175,6 @@ var programCode = function (processingInstance) {
 				for (var i = 0; i < tempKeysLeft.length; i++) {
 					keys['right'][tempKeysLeft[i]] = keys['left'][keys['mirror'][tempKeysLeft[i]]];
 				}
-				console.log(keys['right']);
 				var dir = Object.keys(def);
 				for (var j = 0; j < dir.length; j++) {
 					for (var i = 0; i < def[dir[j]].length; i++) {
@@ -8887,7 +8885,7 @@ var programCode = function (processingInstance) {
 							for (var i = 0; i < b.image.length; i++) {
 								if (b.image[i].width !== undefined) {
 									if (b.image[i].constructor !== Animation) {
-										this.p.image(b.image[i].p, x * REAL_SIZE, y * REAL_SIZE);
+										this.p.image(b.image[i].p, x * REAL_SIZE - b.image[i].offset.x, y * REAL_SIZE - b.image[i].offset.y);
 									} else {
 										this.animations.push({
 											tile: b.image[i],
@@ -8903,7 +8901,7 @@ var programCode = function (processingInstance) {
 						} else {
 							if (b.image.p !== undefined) {
 								if (b.image.constructor !== Animation) {
-									this.p.image(b.image.p, x * REAL_SIZE, y * REAL_SIZE);
+									this.p.image(b.image.p, x * REAL_SIZE - b.image.offset.x, y * REAL_SIZE - b.image.offset.y);
 								} else {
 									this.animations.push({
 										tile: b.image,
@@ -9266,7 +9264,7 @@ var programCode = function (processingInstance) {
                 'jjjjjjjjjjjjjjjj',
                 'jjjjjjjjjjjjjjjj',
                 'jjjjjjjjjjjjjjjj',
-                'jjjjjjjjjjjjjjjj'], pal, 2, 'void');
+                'jjjjjjjjjjjjjjjj'], pal, 2, 'hole');
             new Image([
                 '                ',
                 '      EEEE      ',
@@ -9406,7 +9404,7 @@ var programCode = function (processingInstance) {
         {
             new Tile('grass', 'walkable', '!');
             new Tile(['grass', 'rock'], 'solid', '#');
-            new Tile('void', 'solid', ' ');
+            new Tile('hole', 'solid', ',');
             new Tile(['grass', 'treeA'], 'solid', '$');
             new Tile(['grass', 'purple flower a'], 'walkable', '%');
             new Tile(['grass', 'purple flower b'], 'walkable', '&');
@@ -13724,19 +13722,19 @@ var programCode = function (processingInstance) {
 		{
 			new Screen(0, 0, 0, [
 				'$$$$$$$$$$$$$$$$$$$$$$$$',
-				'$$$!!!!!!!!!!!&&!!!!!$$$',
-				'$$!!!!!!!%&%%!!!!(($!!$$',
-				'$!!!###!%!$!&%!!!!$((!!$',
-				'$!!!$$!!&!%!$!!(!!&&(!&$',
-				'$!&!#$($(!%!!!$$(!!!!!!$',
-				'$&%!($(!%%!!!&(!(!!#!!!$',
-				'$!!!(!!%&!#$!&%!!!!#!!!$',
-				'$!!!!%(!!!#$$&&&!!!!!&$$',
-				'$!!#!%!!#!!##!!%%!!%&&!$',
-				'$!##!!!!%!!!!(!!$!!&$$!$',
-				'$!!!!$!!%!!(((!!#(&&$%!$',
-				'$!!!$$#$(%&%!!!##((!!!!$',
-				'$$!!!$$&&(&!!##!!!!!!!$$',
+				'$$$!!!!!!&!!!!!#!!!!!$$$',
+				'$$!!!!!%!%!!!!!!!!&&!!$$',
+				'$!!!!!!!!&!$$$!%!&%%&$!$',
+				'$!!!!!$$$!!($$!!!!!&!!!$',
+				'$!!!!!$($$!!$(%!$$!%!#!$',
+				'$!!$!!$$($!!!!!$($!!$!!$',
+				'$!!!!!!!$$!!!$$$$$!!!&!$',
+				'$!!!!!!!!&%!!$($$(!&%&%$',
+				'$!$!#!!!!&%&!!$$$!!!&%&$',
+				'$!!!!!!#!%&!!!!!!&&!!!&$',
+				'$!!!$!$!!!$$!!&!&&%!!$$$',
+				'$!!!!$$!!$$$(!!!&%!#!!!$',
+				'$$!#!!!$!$($$!!#!$!!!!$$',
 				'$$$!!!!!!!!!!!!!!!!$!$$$',
 				'$$$$$$$$$$$$$$$$$$$$$$$$'], 
 				{
