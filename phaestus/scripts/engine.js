@@ -9216,89 +9216,205 @@ var programCode = function (processingInstance) {
 		*/
 
 		{
-			new Image([
-				'GIHFGGIHGGHIFHIG',
-				'IHHFGIHFGGHIGFHG',
-				'HHFGIHHGIGHHIFHG',
-				'HFGGIHFGIGFHIGFG',
-				'FIGGHHFHHIGHHGGI',
-				'GHIGHFGHHIGFHGIH',
-				'GHIGHFHGHHGGFGIH',
-				'GFHIFGHGFHGIGGHH',
-				'GFHHGHFIGFGHGIHF',
-				'GGFHHFIHGGIHGHFI',
-				'IGFHHGIHGIHHFHFH',
-				'IGGFGIHFGIHFGFGH',
-				'HGGGGHHFIHHFIGGH',
-				'HGGIGHHGHHFGHIGF',
-				'HGIHGHFGHFGGHIGF',
-				'FIHHGFGGFGIGHHIG'], pal, 2, 'grass');
-			new Image([
-				'                ',
-				'       bbb      ',
-				'     bbccdb     ',
-				'    bcddcdb     ',
-				'    _bdcdddb    ',
-				'   _aabccdca    ',
-				'   _aabbccba    ',
-				'  _aababbbbba   ',
-				'  _aaaabbbbba   ',
-				'  _``aaababbba  ',
-				'  _```aabbbbba  ',
-				'   __``aabbaaa  ',
-				'     _```a___   ',
-				'      ____      ',
-				'                ',
-				'                '], pal, 2, 'rock');
-			new Image([
-				'jjjjjjjjjjjjjjjj',
-				'jjjjjjjjjjjjjjjj',
-				'jjjjjjjjjjjjjjjj',
-				'jjjjjjjjjjjjjjjj',
-				'jjjjjjjjjjjjjjjj',
-				'jjjjjjjjjjjjjjjj',
-				'jjjjjjjjjjjjjjjj',
-				'jjjjjjjjjjjjjjjj',
-				'jjjjjjjjjjjjjjjj',
-				'jjjjjjjjjjjjjjjj',
-				'jjjjjjjjjjjjjjjj',
-				'jjjjjjjjjjjjjjjj',
-				'jjjjjjjjjjjjjjjj',
-				'jjjjjjjjjjjjjjjj',
-				'jjjjjjjjjjjjjjjj',
-				'jjjjjjjjjjjjjjjj'], pal, 2, 'void');
-			new Image([
-				'                ',
-				'      EEEE      ',
-				'     EGHHGE     ',
-				'    EGHIIHGE    ',
-				'    DHFIHFHD    ',
-				'   DFHFHFGFFE   ',
-				'   DGFFHFGGFD   ',
-				'   DGEGFGEGGD   ',
-				'  DFGDEGGEEGED  ',
-				'  DFEFFEGEFEFD  ',
-				'  DEGGFFEFFGED  ',
-				' DFEGFDGFFDFGED ',
-				' CFEFDEGFDEFGEC ',
-				' CEDEEEGFEEDFFC ',
-				' CDFFEDFDEFDEFC ',
-				' CDFEDEDFEFFDDC ',
-				' CDEDDEDEDEEDDC ',
-				'  CDDDEEDDEDDC  ',
-				'   CCDDDDDDCC   ',
-				'    „CCCCCC„    ',
-				'  CCC……†………CCC  ',
-				' CCCC„†…††„CCCC ',
-				'  CCCC„……„CCCC  ',
-				'    CCCCCCCC    '], pal, 2, 'treeA');
-		} // block images
-		{
-			new Tile('grass', 'walkable', '!');
-			new Tile(['grass', 'rock'], 'solid', '#');
-			new Tile('void', 'solid', ' ');
-			new Tile(['grass', 'treeA'], 'solid', '$');
-		} // block tiles
+            new Image([
+                'GIHFGGIHGGHIFHIG',
+                'IHHFGIHFGGHIGFHG',
+                'HHFGIHHGIGHHIFHG',
+                'HFGGIHFGIGFHIGFG',
+                'FIGGHHFHHIGHHGGI',
+                'GHIGHFGHHIGFHGIH',
+                'GHIGHFHGHHGGFGIH',
+                'GFHIFGHGFHGIGGHH',
+                'GFHHGHFIGFGHGIHF',
+                'GGFHHFIHGGIHGHFI',
+                'IGFHHGIHGIHHFHFH',
+                'IGGFGIHFGIHFGFGH',
+                'HGGGGHHFIHHFIGGH',
+                'HGGIGHHGHHFGHIGF',
+                'HGIHGHFGHFGGHIGF',
+                'FIHHGFGGFGIGHHIG'], pal, 2, 'grass');
+            new Image([
+                '                ',
+                '       bbb      ',
+                '     bbccdb     ',
+                '    bcddcdb     ',
+                '    _bdcdddb    ',
+                '   _aabccdca    ',
+                '   _aabbccba    ',
+                '  _aababbbbba   ',
+                '  _aaaabbbbba   ',
+                '  _``aaababbba  ',
+                '  _```aabbbbba  ',
+                '   __``aabbaaa  ',
+                '     _```a___   ',
+                '      ____      ',
+                '                ',
+                '                '], pal, 2, 'rock');
+            new Image([
+                'jjjjjjjjjjjjjjjj',
+                'jjjjjjjjjjjjjjjj',
+                'jjjjjjjjjjjjjjjj',
+                'jjjjjjjjjjjjjjjj',
+                'jjjjjjjjjjjjjjjj',
+                'jjjjjjjjjjjjjjjj',
+                'jjjjjjjjjjjjjjjj',
+                'jjjjjjjjjjjjjjjj',
+                'jjjjjjjjjjjjjjjj',
+                'jjjjjjjjjjjjjjjj',
+                'jjjjjjjjjjjjjjjj',
+                'jjjjjjjjjjjjjjjj',
+                'jjjjjjjjjjjjjjjj',
+                'jjjjjjjjjjjjjjjj',
+                'jjjjjjjjjjjjjjjj',
+                'jjjjjjjjjjjjjjjj'], pal, 2, 'void');
+            new Image([
+                '                ',
+                '      EEEE      ',
+                '     EGGGGE     ',
+                '    EFHIIHGE    ',
+                '    DFIIIIGD    ',
+                '   DGFHFIHHFE   ',
+                '   DHGFFHFHFD   ',
+                '   DHHGGFGFGD   ',
+                '  DEGEEHGEGHED  ',
+                '  DFEFEGEFEEFD  ',
+                '  DGFGFEFGFGGD  ',
+                ' DDGGFGFGFGGFDD ',
+                ' CDFGDGGFGDGDEC ',
+                ' CEDFDFDFGDFDEC ',
+                ' CFEDEDEDFDDECC ',
+                ' CCFEFEFEDEEFCC ',
+                ' CCFECEFFEFCECC ',
+                '  CDCECEECECCC  ',
+                '   CCDCECDCCC   ',
+                '    „CCCCCC„    ',
+                '  CCC……†………CCC  ',
+                ' CCCC„†…††„CCCC ',
+                '  CCCC„……„CCCC  ',
+                '    CCCCCCCC    '], pal, 2, 'treeA');
+            new Image([
+                '                ',
+                '                ',
+                '            ;   ',
+                '        PQQ A;  ',
+                '         PPP    ',
+                '        QPPOP   ',
+                '        PPO O   ',
+                '       DOO      ',
+                '        D       ',
+                '        C       ',
+                '    DDD  D      ',
+                '   DCCED C      ',
+                '   C  CED       ',
+                '       CD       ',
+                '       C        ',
+                '                '], pal, 2, 'purple flower a');
+            new Image([
+                '                ',
+                '                ',
+                ' ;              ',
+                ';A QQP          ',
+                '  PPP           ',
+                ' POPPQ     QQ Q ',
+                ' O OPP    OPPPP ',
+                '    OOD  D OPPO ',
+                '      CDD   OPA;',
+                '       C   OP ; ',
+                '        D       ',
+                '     DD E DD    ',
+                '    DEECDDCCD   ',
+                '    DCC  C  C   ',
+                '    C    C      ',
+                '                '], pal, 2, 'purple flower b');
+            new Image([
+                '                ',
+                '      EEEE      ',
+                '    EEGGGGEE    ',
+                '   EGGHIHHGGE   ',
+                '  EGFHIIIIHFGE  ',
+                '  DEGFHIHHFGEE  ',
+                ' DFEGGFHFFGEFFD ',
+                ' DEFEEGFEGEFFDD ',
+                ' DEFDFEGEEFDFED ',
+                ' CDEDFDEFDFDDDD ',
+                ' CCDEDEDDEDEECD ',
+                '  CCDEDEDDEDDC  ',
+                '  CCCDCDDCDCCC  ',
+                ' CCCCCCCCCCCCCC ',
+                '  CCCCCCCCCCCC  ',
+                '    CCCCCCCC    '], pal, 2, 'bush');
+            {
+                new Image([
+                    '+-./,...',
+                    '+/-./000',
+                    '+./-.///',
+                    '+-./,...',
+                    '+/-.,/00',
+                    '+.--,///',
+                    '+,-/,...',
+                    '+.,./000'], pal, 2, 'wall corner left a');
+                new Image([
+                    '+-.,////',
+                    '+,-.,---',
+                    '+.,-,.//',
+                    '+-,,,...',
+                    ' +,.,---',
+                    '  +-.///',
+                    '   +-...',
+                    '    +,,,'], pal, 2, 'wall corner left b');
+                new Image([
+                    '...,/.-+',
+                    '000/.-/+',
+                    '///.-/.+',
+                    '...,/.-+',
+                    '00/,.-/+',
+                    '///,--.+',
+                    '...,/-,+',
+                    '000/.,.+'], pal, 2, 'wall corner right a');
+                new Image([
+                    '////,.-+',
+                    '---,.-,+',
+                    '//.,-,.+',
+                    '...,,,-+',
+                    '---,.,+ ',
+                    '///.-+  ',
+                    '...-+   ',
+                    ',,,+    '], pal, 2, 'wall corner right b');
+                new Image([
+                    '........',
+                    '0/./0000',
+                    '//-/////',
+                    '.--.-...',
+                    '000000/.',
+                    '///////-',
+                    '......--',
+                    '0/./0000'], pal, 2, 'wall a');
+                new Image([
+                    '//-/////',
+                    '-,,-----',
+                    '//////.-',
+                    '.......-',
+                    '-------,',
+                    '/.-.////',
+                    '..,.....',
+                    ',,,,,,,,'], pal, 2, 'wall b');
+            } // wall meta tiles
+            new MetaImage('wall corner left a', 'wall a', 'wall corner left b', 'wall b', 'wall corner left');
+            new MetaImage('wall a', 'wall corner right a', 'wall b', 'wall corner right b', 'wall corner right');
+            new MetaImage('wall a', 'wall a', 'wall b', 'wall b', 'wall center');
+        } // block images
+        {
+            new Tile('grass', 'walkable', '!');
+            new Tile(['grass', 'rock'], 'solid', '#');
+            new Tile('void', 'solid', ' ');
+            new Tile(['grass', 'treeA'], 'solid', '$');
+            new Tile(['grass', 'purple flower a'], 'walkable', '%');
+            new Tile(['grass', 'purple flower b'], 'walkable', '&');
+            new Tile(['grass', 'bush'], 'solid', '(');
+            new Tile(['grass', 'wall corner left'], 'solid', ')');
+            new Tile('wall center', 'solid', '+');
+            new Tile(['grass', 'wall corner right'], 'solid', '*');
+        } // block tiles
 		{
 			new Image([
 				' _______________',
