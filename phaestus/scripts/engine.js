@@ -13741,7 +13741,7 @@ var programCode = function (processingInstance) {
 				'$$$$$$$$$$$$$$$$$$$$$$$$'], 
 				{
 					'enemy': [
-						{'name': 'slime', 'x': 4, 'y': 3}
+						{'name': 'slime', 'x': 3, 'y': 3}
 					]
 				});
 		} // maps
