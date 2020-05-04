@@ -18,6 +18,20 @@ body {
 	height: 20px;
 	display: flex;
 }
+.current_menu_button {
+	background-color: darkgray;
+	height: 20px;
+	width: 100px;
+	margin: 2px;
+	text-align: center;
+	font-family: atiba;
+	font-size: 14px;
+	user-select: none;
+}
+.menu_link {
+	text-decoration: none;
+	color: black;
+}
 .menu_button {
 	background-color: lightgray;
 	height: 20px;

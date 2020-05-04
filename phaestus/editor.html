@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="UTF-8">
+	<title>Phaestus Editor</title>
+	<style>
+		p {
+			font-family: "monospace";
+		}
+	</style>
+</head>
+
+<body>
+	<table>
+		<tr>
+			<td>
+				<canvas id="mycanvas"></canvas>
+			</td>
+			<td>
+				<textarea id='load'></textarea>
+				<input id='loadButton' type='button' value='load'></input>
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<p id="p"></p>
+			</td>
+		</tr>
+	</table><!-- Include the processing.js library -->
+	<!-- See https://khanacademy.zendesk.com/hc/en-us/articles/202260404-What-parts-of-ProcessingJS-does-Khan-Academy-support- for differences -->
+	<script src="scripts/processing.min.js">
+	</script>
+	<script src="scripts/editor.js">
+	</script>
+</body>
+
+</html>
