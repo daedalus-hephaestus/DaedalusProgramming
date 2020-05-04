@@ -282,8 +282,8 @@ var programCode = function (processingInstance) {
 					'x': 0,
 					'y': 0
 				},
-				'x': 0, // the player's x-coordinate
-				'y': 0, // the player's y-coordinate
+				'x': 64, // the player's x-coordinate
+				'y': 192, // the player's y-coordinate
 				'wx': 0,
 				'wy': 0,
 				'sub': false // whether the player is in a building
@@ -13740,8 +13740,8 @@ var programCode = function (processingInstance) {
 				'$$$!!!!!!!!!!!!!!!!$!$$$',
 				'$$$$$$$$$$$$$$$$$$$$$$$$'], 
 				{
-					'enemies': [
-						{name: 'slime', x: 4, y: 4}
+					'enemy': [
+						{'name': 'slime', 'x': 4, 'y': 3}
 					]
 				});
 		} // maps
