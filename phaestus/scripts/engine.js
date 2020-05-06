@@ -865,6 +865,9 @@ var programCode = function (processingInstance) {
 				images[name] = this;
 				animations[name] = this;
 				load.animations.push(this);
+				if(count.animations !== undefined) {
+					count.animations++;
+				}
 			}; // the animation constructor function
 			Animation.prototype.load = function () {
 				this.a = []; // stores all the final image frames
