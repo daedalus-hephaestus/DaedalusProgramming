@@ -282,7 +282,7 @@ var programCode = function (processingInstance) {
 					'x': 0,
 					'y': 0
 				},
-				'x': 64, // the player's x-coordinate
+				'x': 192, // the player's x-coordinate
 				'y': 192, // the player's y-coordinate
 				'wx': 0,
 				'wy': 0,
@@ -14034,7 +14034,7 @@ var programCode = function (processingInstance) {
  '$$$$$$$$$$$$$($$($$$$$$$'],
 				{
 					'enemy': [
-						{ 'name': 'slime', 'x': 3, 'y': 3 }
+						{ 'name': 'slime', 'x': 3, 'y': 4}
 					]
 				});
 		} // maps
