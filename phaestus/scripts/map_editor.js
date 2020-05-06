@@ -6895,10 +6895,260 @@ var programCode = function (processingInstance) {
                     '/.-.////',
                     '..,.....',
                     ',,,,,,,,'], pal, 2, 'wall b');
+                new Image([
+                    '+-./.&$$',
+                    '+-./.&$$',
+                    '+-./.&$$',
+                    '+-./.&$$',
+                    '+-./.&$$',
+                    '+-./.&$$',
+                    '+-./.&$$',
+                    '+-./.&$&'], pal, 2, 'wall left a');
+                new Image([
+                    '+-./.&&(',
+                    '+-./.&((',
+                    '+-./0.((',
+                    '+-.010..',
+                    '+-010/00',
+                    '+,10////',
+                    '+/,.....',
+                    '+./,,,,,'], pal, 2, 'wall left b');
+                new Image([
+                    '+-./.&$$',
+                    '+-./.&$$',
+                    '+-./.&$$',
+                    '+-./.&$$',
+                    '+-./.&$$',
+                    '+-./.&$$',
+                    '+-./.&$$',
+                    '+-./.&$$'], pal, 2, 'wall left c');
+                new Image([
+                    '   *****',
+                    ' **,,,,,',
+                    ' */-----',
+                    '+..//%%%',
+                    '+-...&%%',
+                    '+-./.&&&',
+                    '+-./.&&&',
+                    '+-./.&$$'], pal, 2, 'wall left d');
+                new Image([
+                    '$$$$$$&(',
+                    '$$$$$&((',
+                    '$$$$&((%',
+                    '$$$&((%%',
+                    '$$&((%%%',
+                    '$&((%%%%',
+                    '&((%%%%%',
+                    '((%%%%%%'], pal, 2, 'roof left a');
+                new Image([
+                    '$$$$$$&&',
+                    '$$$$$$&&',
+                    '$$$$$$&&',
+                    '$$$$$$&&',
+                    '$$$$$$&&',
+                    '$$$$$$&&',
+                    '$$$$$$&&',
+                    '$$$$$$&&'], pal, 2, 'roof left b');
+                new Image([
+                    '(%%%%%%%',
+                    '%%%%%%%%',
+                    '((((((((',
+                    '........',
+                    '00000000',
+                    '////////',
+                    '........',
+                    ',,,,,,,,'], pal, 2, 'roof bottom a');
+                new Image([
+                    '$$&./.-+',
+                    '$$&./.-+',
+                    '$$&./.-+',
+                    '$$&./.-+',
+                    '$$&./.-+',
+                    '$$&./.-+',
+                    '$$&./.-+',
+                    '&$&./.-+'], pal, 2, 'wall right a');
+                new Image([
+                    '(&&./.-+',
+                    '((&./.-+',
+                    '((.0/.-+',
+                    '..010.-+',
+                    '00/010-+',
+                    '////01,+',
+                    '.....,/+',
+                    ',,,,,/.+'], pal, 2, 'wall right b');
+                new Image([
+                    '$$&./.-+',
+                    '$$&./.-+',
+                    '$$&./.-+',
+                    '$$&./.-+',
+                    '$$&./.-+',
+                    '$$&./.-+',
+                    '$$&./.-+',
+                    '$$&./.-+'], pal, 2, 'wall right c');
+                new Image([
+                    '*****   ',
+                    ',,,,,** ',
+                    '-----/* ',
+                    '%%%//..+',
+                    '%%&...-+',
+                    '&&&./.-+',
+                    '&&&./.-+',
+                    '$$&./.-+'], pal, 2, 'wall right d');
+                new Image([
+                    '(&$$$$$$',
+                    '((&$$$$$',
+                    '%((&$$$$',
+                    '%%((&$$$',
+                    '%%%((&$$',
+                    '%%%%((&$',
+                    '%%%%%((&',
+                    '%%%%%%(('], pal, 2, 'roof right a');
+                new Image([
+                    '&&$$$$$$',
+                    '&&$$$$$$',
+                    '&&$$$$$$',
+                    '&&$$$$$$',
+                    '&&$$$$$$',
+                    '&&$$$$$$',
+                    '&&$$$$$$',
+                    '&&$$$$$$'], pal, 2, 'roof right b');
+                new Image([
+                    '%%%%%%%(',
+                    '%%%%%%%%',
+                    '((((((((',
+                    '........',
+                    '00000000',
+                    '////////',
+                    '........',
+                    ',,,,,,,,'], pal, 2, 'roof bottom b');
+                new Image([
+                    '((((((((',
+                    '((((((((',
+                    '%%%%%%%%',
+                    '%%%%%%%%',
+                    '%%%%%%%%',
+                    '%%%%%%%%',
+                    '%%%%%%%%',
+                    '%%%%%%%%'], pal, 2, 'roof middle a');
+                new Image([
+                    '%%%%%%%%',
+                    '%%%%%%%%',
+                    '((((((((',
+                    '........',
+                    '00000000',
+                    '////////',
+                    '........',
+                    ',,,,,,,,'], pal, 2, 'roof middle b');
+                new Image([
+                    '%%%%%%%%',
+                    '%%%%%%%%',
+                    '%%%%%%%%',
+                    '%%%%%%%%',
+                    '%%%%%%%%',
+                    '%%%%%%%%',
+                    '%%%%%%%%',
+                    '%%%%%%%%'], pal, 2, 'roof middle c');
+                new Image([
+                    '********',
+                    ',,,,,,,,',
+                    '--------',
+                    '%%%%%%%%',
+                    '########',
+                    '%%######',
+                    '&&%%####',
+                    '&&&&%%##'], pal, 2, 'wall top a');
+                new Image([
+                    '********',
+                    ',,,,,,,,',
+                    '--------',
+                    '%%%%%%%%',
+                    '########',
+                    '########',
+                    '########',
+                    '########'], pal, 2, 'wall top b');
+                new Image([
+                    '********',
+                    ',,,,,,,,',
+                    '--------',
+                    '%%%%%%%%',
+                    '########',
+                    '######%%',
+                    '####%%&&',
+                    '##%%&&&&'], pal, 2, 'wall top c');
+                new Image([
+                    '$$&&&&%%',
+                    '$$$$&&&&',
+                    '$$$$$$&&',
+                    '$$$$$$&&',
+                    '$$$$$$&&',
+                    '$$$$$$&&',
+                    '$$$$$$&&',
+                    '$$$$$$&&'], pal, 2, 'roof top a');
+                new Image([
+                    '########',
+                    '%%%%%%%%',
+                    '&&&&&&&&',
+                    '%%%%%%%%',
+                    '%%%%%%%%',
+                    '%%%%%%%%',
+                    '%%%%%%%%',
+                    '%%%%%%%%'], pal, 2, 'roof top b');
+                new Image([
+                    '%%&&&&$$',
+                    '&&&&$$$$',
+                    '&&$$$$$$',
+                    '&&$$$$$$',
+                    '&&$$$$$$',
+                    '&&$$$$$$',
+                    '&&$$$$$$',
+                    '&&$$$$$$'], pal, 2, 'roof top c');
             } // wall meta tiles
             new MetaImage('wall corner left a', 'wall a', 'wall corner left b', 'wall b', 'wall corner left');
             new MetaImage('wall a', 'wall corner right a', 'wall b', 'wall corner right b', 'wall corner right');
             new MetaImage('wall a', 'wall a', 'wall b', 'wall b', 'wall center');
+            new MetaImage('wall left a', 'roof left a', 'wall left b', 'roof bottom a', 'roof bottom left corner');
+            new MetaImage('roof right a', 'wall right a', 'roof bottom b', 'wall right b', 'roof bottom right corner');
+            new MetaImage('roof middle a', 'roof middle a', 'roof middle b', 'roof middle b', 'roof bottom');
+            new MetaImage('wall left c', 'roof left b', 'wall left c', 'roof left b', 'roof left');
+            new MetaImage('roof right b', 'wall right c', 'roof right b', 'wall right c', 'roof right');
+            new MetaImage('roof middle c', 'roof middle c', 'roof middle c', 'roof middle c', 'roof middle');
+            new MetaImage('wall left d', 'wall top a', 'wall left c', 'roof top a', 'roof top left corner');
+            new MetaImage('wall top c', 'wall right d', 'roof top c', 'wall right c', 'roof top right corner');
+            new MetaImage('wall top b', 'wall top b', 'roof top b', 'roof top b', 'roof top');
+            new Image([
+                '................',
+                '.--------------.',
+                '-///11111111///-',
+                '-..//////////..-',
+                '----........----',
+                '++++jjjjjjjj++++',
+                '+,+,j#j##j#j,+,+',
+                '+,,,jj$jj$jj,,,+',
+                '+,,-jj$jj$jj-,,+',
+                '+---j#j##j#j---+',
+                '+---jjjjjjjj---+',
+                ',.001111111100.,',
+                ',...00000000...,',
+                '+--------------+',
+                ',++++++++++++++,',
+                ',,,,,,,,,,,,,,,,'], pal, 2, 'window');
+            new Image([
+                './/////////////.',
+                '/-000000000000-/',
+                '//-0,,,,,,,,0-//',
+                '///,jjjjjjjj,///',
+                '//,jjjjjjjjjj,//',
+                './,jjjjjjjjjj,/.',
+                './,jjjjjjjjjj,/.',
+                './,jjjjjjjjjj,/.',
+                ',-,jjjjjjjjjj,-,',
+                '-.,jjjjjjjjjj,.-',
+                '-.,jjjjjjjjjj,.-',
+                '-.,jjjjjjjjjj,.-',
+                ',-,jjjjjjjjjj,-,',
+                ',-,jjjjjjjjjj,-,',
+                ',-,jjjjjjjjjj,-,',
+                ',,,jjjjjjjjjj,,,'], pal, 2, 'door');
         } // block images
         {
             new Tile('grass', 'walkable', '!');
@@ -6911,6 +7161,17 @@ var programCode = function (processingInstance) {
             new Tile(['grass', 'wall corner left'], 'solid', ')');
             new Tile('wall center', 'solid', '+');
             new Tile(['grass', 'wall corner right'], 'solid', '*');
+            new Tile('window', 'solid', ',');
+            new Tile('door', 'solid', '-');
+            new Tile('roof bottom left corner', 'solid', '.');
+            new Tile('roof bottom right corner', 'solid', '/');
+            new Tile('roof bottom', 'solid', '0');
+            new Tile('roof left', 'solid', '1');
+            new Tile('roof middle', 'solid', '2');
+            new Tile('roof right', 'solid', '3');
+            new Tile(['grass', 'roof top left corner'], 'solid', '4');
+            new Tile('roof top', 'solid', '5');
+            new Tile(['grass', 'roof top right corner'], 'solid', '6');
         } // block tiles
         var loadAll = function () {
             fill(0xFFFFFFFF);
