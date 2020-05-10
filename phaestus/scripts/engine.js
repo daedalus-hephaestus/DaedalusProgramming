@@ -14496,7 +14496,7 @@ var programCode = function (processingInstance) {
 				
 				drawAlerts();
 				fill(255, 0, 0);
-				textSze(16);
+				textSize(16);
 				textAlign(LEFT, BASELINE);
 				var a = Object.keys(animations);
 				for (var i = 0; i < a.length; i++) {
