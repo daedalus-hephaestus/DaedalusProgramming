@@ -9244,10 +9244,6 @@ var programCode = function (processingInstance) {
 						a.animation.frame = 0;
 					}
 				}
-				noStroke();
-				colorMode(RGB);
-				fill(0, 0, 0, World.transition.value);
-				rect(0, 0, width, height);
 				World.transition.value += World.transition.change;
 				if (World.transition.value < 0) {
 					World.transition.value = 0;
@@ -9260,7 +9256,6 @@ var programCode = function (processingInstance) {
 						World.transition.destination();
 					}
 				}
-				colorMode(HSB);
 			};
 			World.topDraw = function (x, y, z) {
 				var selMap = World.maps[x][y][z];
@@ -14501,7 +14496,7 @@ var programCode = function (processingInstance) {
 				
 				drawAlerts();
 				fill(255, 0, 0);
-				textSize(16);
+				textSze(16);
 				textAlign(LEFT, BASELINE);
 				var a = Object.keys(animations);
 				for (var i = 0; i < a.length; i++) {
