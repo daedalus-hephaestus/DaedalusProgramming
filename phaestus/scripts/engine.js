@@ -9244,7 +9244,6 @@ var programCode = function (processingInstance) {
 						a.animation.frame = 0;
 					}
 				}
-				World.topDraw(x, y, z);
 				noStroke();
 				colorMode(RGB);
 				fill(0, 0, 0, World.transition.value);
@@ -14489,9 +14488,17 @@ var programCode = function (processingInstance) {
 				World.draw(Player['loc']['scene']['x'], Player['loc']['scene']['y'], Player['loc']['scene']['z']);
 				Player.movement();
 				Player.update();
+				World.topDraw(Player['loc']['scene']['x'], Player['loc']['scene']['y'], Player['loc']['scene']['z']);
 				Player['bar'].draw(0, height - REAL_SIZE);
 				Player['healthBar'].draw(0, 0, Player['stats']['curFortitude'], Player['stats']['fortitude'], Player['stats']['curEndurance'], Player['stats']['endurance'], Player['stats']['vitality'], Player['stats']['vigor'], Player['stats']['luck'], Player['stats']['strength'], Player['stats']['armor']);
 				Player['xpBar'].draw(0, 480);
+				
+				noStroke();
+				colorMode(RGB);
+				fill(0, 0, 0, World.transition.value);
+				rect(0, 0, width, height);
+				colorMode(HSB);
+				
 				drawAlerts();
 				fill(255, 0, 0);
 				textSize(16);
