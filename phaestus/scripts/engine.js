@@ -38,7 +38,7 @@ var programCode = function (processingInstance) {
 		var animations = {};
 		var buffs = {};
 		var tiles = {};
-		var World = { maps: [], interiors: [], animations: [] };
+		var World = { maps: [], interiors: [], animations: [], transition: { value: 0, change: 0 } };
 
 		// load arrays
 		var load = {
@@ -282,6 +282,7 @@ var programCode = function (processingInstance) {
 					'x': 0,
 					'y': 0
 				},
+				'fade': false,
 				'x': 192, // the player's x-coordinate
 				'y': 192, // the player's y-coordinate
 				'wx': 0,
@@ -457,6 +458,8 @@ var programCode = function (processingInstance) {
 			} else if (Player['actions']['vendor'] !== false) {
 				Player['moveable'] = false;
 				Player['vendorGui'].draw(REAL_SIZE, REAL_SIZE, Player['actions']['vendor']);
+			} else if (Player['loc']['fade']) {
+				Player['moveable'] = false;
 			} else {
 				Player['moveable'] = true; // makes the player moveable again
 			}
@@ -9076,11 +9079,7 @@ var programCode = function (processingInstance) {
 							if (mouseIsPressed && newClick && !Player['actions']['fighting']) {
 								newClick = false;
 								if (distance < 64) {
-									Player['loc']['sub'] = tile.interior;
-									Player['loc']['wx'] = Player['loc']['x'];
-									Player['loc']['wy'] = Player['loc']['y'];
-									Player['loc']['x'] = tile.interior.spawnX * REAL_SIZE;
-									Player['loc']['y'] = tile.interior.spawnY * REAL_SIZE;
+									World.transition.run('enter', i);
 								} else {
 									new Popup('I need to get closer', GUI_TEXT_COLOR, Player['loc']['x'] - REAL_SIZE, Player['loc']['y'], 'entranceDistance');
 								}
@@ -9091,9 +9090,7 @@ var programCode = function (processingInstance) {
 							if (mouseIsPressed && newClick && !Player['actions']['fighting']) {
 								newClick = false;
 								if (distance < 64) {
-									Player['loc']['sub'] = false;
-									Player['loc']['x'] = Player['loc']['wx'];
-									Player['loc']['y'] = Player['loc']['wy'];
+									World.transition.run('exit');
 								} else {
 									new Popup('I need to get closer', GUI_TEXT_COLOR, Player['loc']['x'] - REAL_SIZE, Player['loc']['y'], 'exitDistance');
 								}
@@ -9247,6 +9244,24 @@ var programCode = function (processingInstance) {
 						a.animation.frame = 0;
 					}
 				}
+				World.topDraw(x, y, z);
+				noStroke();
+				colorMode(RGB);
+				fill(0, 0, 0, World.transition.value);
+				rect(0, 0, width, height);
+				World.transition.value += World.transition.change;
+				if (World.transition.value < 0) {
+					World.transition.value = 0;
+					World.transition.change = 0;
+					Player['loc']['fade'] = false;
+				}
+				if (World.transition.value > 255) {
+					World.transition.change = -World.transition.change;
+					if (World.transition.destination !== undefined) {
+						World.transition.destination();
+					}
+				}
+				colorMode(HSB);
 			};
 			World.topDraw = function (x, y, z) {
 				var selMap = World.maps[x][y][z];
@@ -9257,6 +9272,26 @@ var programCode = function (processingInstance) {
 					image(selMap.tops[i].tile.top, selMap.tops[i].x, selMap.tops[i].y);
 				}
 			}
+			World.transition.run = function (type, value) {
+				Player['loc']['fade'] = true;
+				World.transition.change = 10;
+				if (type === 'enter') {
+					World.transition.destination = function () {
+						var tile = World.maps[Player['loc']['scene']['x']][Player['loc']['scene']['y']][Player['loc']['scene']['z']].tiles[value];
+						Player['loc']['sub'] = tile.interior;
+						Player['loc']['wx'] = Player['loc']['x'];
+						Player['loc']['wy'] = Player['loc']['y'];
+						Player['loc']['x'] = tile.interior.spawnX * REAL_SIZE;
+						Player['loc']['y'] = tile.interior.spawnY * REAL_SIZE;
+					};
+				} else if (type === 'exit') {
+					World.transition.destination = function () {
+						Player['loc']['sub'] = false;
+						Player['loc']['x'] = Player['loc']['wx'];
+						Player['loc']['y'] = Player['loc']['wy'];
+					};
+				}
+			};
 		} // map constructors
 
 		/*                      _       
@@ -14453,7 +14488,6 @@ var programCode = function (processingInstance) {
 			} else {
 				World.draw(Player['loc']['scene']['x'], Player['loc']['scene']['y'], Player['loc']['scene']['z']);
 				Player.movement();
-				World.topDraw(Player['loc']['scene']['x'], Player['loc']['scene']['y'], Player['loc']['scene']['z']);
 				Player.update();
 				Player['bar'].draw(0, height - REAL_SIZE);
 				Player['healthBar'].draw(0, 0, Player['stats']['curFortitude'], Player['stats']['fortitude'], Player['stats']['curEndurance'], Player['stats']['endurance'], Player['stats']['vitality'], Player['stats']['vigor'], Player['stats']['luck'], Player['stats']['strength'], Player['stats']['armor']);
