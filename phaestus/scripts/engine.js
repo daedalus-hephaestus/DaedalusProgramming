@@ -14410,7 +14410,7 @@ var programCode = function (processingInstance) {
 		{
 			new Buff('23', 'booger', 'luck', 10, 6000);
 		} // buffs
-		Player['inventory']['bags']['bag1'] = { 'brown bag': 10, 'breastplate of power': 1, 'blue belt': 2, 'orange sweats': 2, 'purple mittens': 1, 'green boots': 1 };
+		Player['inventory']['bags']['bag1'] = {};
 		var loadAll = function () {
 			fill(0xFFFFFFFF);
 			textAlign(CENTER, CENTER);
@@ -14472,6 +14472,9 @@ var programCode = function (processingInstance) {
 				text('Loading Maps', 384, 272);
 				rect(100, 300, (width - 200) - (width - 200) * (load.screens.length / count.screens), 20);
 			} else {
+				items['ragged leather jerkin'].use();
+				items['orange sweats'].use();
+				items['green boots'].use();
 				loaded = true;
 			}
 		};
@@ -14482,8 +14485,8 @@ var programCode = function (processingInstance) {
 			} else {
 				World.draw(Player['loc']['scene']['x'], Player['loc']['scene']['y'], Player['loc']['scene']['z']);
 				Player.movement();
-				Player.update();
 				World.topDraw(Player['loc']['scene']['x'], Player['loc']['scene']['y'], Player['loc']['scene']['z']);
+				Player.update();
 				Player['bar'].draw(0, height - REAL_SIZE);
 				Player['healthBar'].draw(0, 0, Player['stats']['curFortitude'], Player['stats']['fortitude'], Player['stats']['curEndurance'], Player['stats']['endurance'], Player['stats']['vitality'], Player['stats']['vigor'], Player['stats']['luck'], Player['stats']['strength'], Player['stats']['armor']);
 				Player['xpBar'].draw(0, 480);
