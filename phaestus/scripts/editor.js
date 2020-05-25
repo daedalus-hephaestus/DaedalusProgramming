@@ -171,7 +171,7 @@ var programCode = function (processingInstance) {
 			loadColor: ' ',
 			image: [],
 			width: 16,
-			height: 16,
+			height: 24,
 			name: '',
 			animation: false,
 			frames: [],

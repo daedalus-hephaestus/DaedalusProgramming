@@ -1,0 +1,1 @@
+var save = [[0, 0, 0, 192, 248, 0, 0, false], [10, 0, ['brown bag', 'nothing', 'nothing', 'nothing', 'nothing'], [{}, {}, {}, {}, {}], ['nothing', 'nothing', 'nothing', 'ragged leather jerkin', 'nothing', 'nothing', 'nothing', 'orange sweats', 'nothing', 'green boots', 'nothing', 'nothing', 'nothing'], ['slash', 'lucky charms']],];

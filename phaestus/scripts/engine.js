@@ -3,6 +3,9 @@ var programCode = function (processingInstance) {
 		size(768, 544);
 
 		/*jshint sub:true*/
+
+
+		var saveFile = [[0, 0, 0, 192, 224, 192, 160, false], [11, 0, ['brown bag', 'nothing', 'nothing', 'nothing', 'nothing'], [{}, {}, {}, {}, {}], ['nothing', 'nothing', 'nothing', 'ragged leather jerkin', 'nothing', 'nothing', 'nothing', 'orange sweats', 'nothing', 'nothing', 'nothing', 'nothing', 'short brown hair'], ['slash', 'lucky charms'], ['slash', 'lucky charms', 'nothing', 'nothing', 'nothing'], {}], [100, 100, 20, 1, 100], [['stupid',], [[0, 0, 0, 6, 4, 13, 7]]]];
 		var FRAME_RATE = 60;
 		var PIXEL_SIZE = 2;
 		var TILE_SIZE = 16;
@@ -294,7 +297,7 @@ var programCode = function (processingInstance) {
 				'gold': 10,
 				'silver': 0,
 				'bagSlots': { // the players bag slots
-					'bag1': 'brown bag',
+					'bag1': 'nothing',
 					'bag2': 'nothing',
 					'bag3': 'nothing',
 					'bag4': 'nothing',
@@ -319,9 +322,10 @@ var programCode = function (processingInstance) {
 					'waist': 'nothing',
 					'feet': 'nothing',
 					'mainHand': 'nothing',
-					'offHand': 'nothing'
+					'offHand': 'nothing',
+					'hair': 'nothing'
 				},
-				'abilities': { 'slash': true, 'lucky charms': true }, // the abilities currently available in the spellbook
+				'abilities': {}, // the abilities currently available in the spellbook
 				'abilityBar': { // the abilities on the bar assigned a button value of 1-5
 					'1': 'nothing',
 					'2': 'nothing',
@@ -364,6 +368,9 @@ var programCode = function (processingInstance) {
 					'spellBook': false,
 					'questLog': false,
 					'questDetails': false,
+					'vendor': false,
+					'quest': false,
+					'looting': false,
 				},
 				'cooldown': {
 					'1': { 'max': 0, 'cur': 0, 'change': 0 },
@@ -373,11 +380,8 @@ var programCode = function (processingInstance) {
 					'5': { 'max': 0, 'cur': 0, 'change': 0 }
 				},
 				'fighting': false,
-				'looting': false,
-				'vendor': false,
-				'quest': false,
 				'completedQuests': [],
-				'info': false
+				'used': []
 			},
 			'buffs': {
 
@@ -401,6 +405,7 @@ var programCode = function (processingInstance) {
 					'legs': 'nothing',
 					'waist': 'nothing',
 					'feet': 'nothing',
+					'hair': 'nothing'
 				}
 			},
 			'colBox': {
@@ -446,18 +451,19 @@ var programCode = function (processingInstance) {
 				}
 			}
 
+			var tempGuis = Object.keys(Player['actions']['guis']);
 			// detects if the player is in combat
 			if (Player['actions']['fighting'] !== false) {
 				Player['moveable'] = false; // makes the player imovable
 				Player['actions']['fighting'].entity.fight(Player['actions']['fighting']); // starts entity combat
 			} else if (Player['loc']['shifting'] !== false) {
 				Player['moveable'] = false; // makes the player imovable
-			} else if (Player['actions']['quest'] !== false) {
+			} else if (Player['actions']['guis']['quest'] !== false) {
 				Player['moveable'] = false;
-				Player['questGui'].draw(REAL_SIZE, REAL_SIZE, Player['actions']['quest']);
-			} else if (Player['actions']['vendor'] !== false) {
+				Player['questGui'].draw(REAL_SIZE, REAL_SIZE, Player['actions']['guis']['quest']);
+			} else if (Player['actions']['guis']['vendor'] !== false) {
 				Player['moveable'] = false;
-				Player['vendorGui'].draw(REAL_SIZE, REAL_SIZE, Player['actions']['vendor']);
+				Player['vendorGui'].draw(REAL_SIZE, REAL_SIZE, Player['actions']['guis']['vendor']);
 			} else if (Player['loc']['fade']) {
 				Player['moveable'] = false;
 			} else {
@@ -476,10 +482,18 @@ var programCode = function (processingInstance) {
 			if (Player['actions']['guis']['spellBook']) {
 				Player['spellBookGui'].draw(REAL_SIZE, REAL_SIZE);
 			}
-
+			Player.closeGuis = function () {
+				newKey = false;
+				for (var i = 0; i < tempGuis.length; i++) {
+					Player['actions']['guis'][tempGuis[i]] = false;
+				}
+			};
+			if (keys[81] && newKey) {
+				Player.closeGuis();
+			} // closes all guis when "q" is pressed
 			// detects if the player is looting something
-			if (Player['actions']['looting'] !== false) {
-				Player['lootbox'].draw(320, 224, Player['actions']['looting']); // opens the loot pane
+			if (Player['actions']['guis']['looting'] !== false) {
+				Player['lootbox'].draw(320, 224, Player['actions']['guis']['looting']); // opens the loot pane
 			}
 
 			// increments all of the cooldowns
@@ -492,8 +506,7 @@ var programCode = function (processingInstance) {
 				}
 			}
 
-			if (keys[66] && newKey) {
-				newKey = false;
+			Player.openBags = function () {
 				var tempBags = {
 					open: 0,
 					close: 0
@@ -520,7 +533,36 @@ var programCode = function (processingInstance) {
 						}
 					}
 				}
+			};
+			if (keys[66] && newKey) {
+				newKey = false;
+				Player.openBags();
 			} // opens all of the bags when "b" is pressed
+			if (keys[67] && newKey) {
+				if (!Player['actions']['guis']['characterPane']) {
+					Player.closeGuis();
+				}
+				newKey = false;
+				Player['actions']['guis']['characterPane'] = !Player['actions']['guis']['characterPane'];
+			} // opens the character pane when "c" is pressed
+			if (keys[86] && newKey) {
+				if (!Player['actions']['guis']['spellBook']) {
+					Player.closeGuis();
+				}
+				newKey = false;
+				Player['actions']['guis']['spellBook'] = !Player['actions']['guis']['spellBook'];
+			} // opens the spellbook when "v" is pressed
+			if (keys[88] && newKey) {
+				if (!Player['actions']['guis']['questLog']) {
+					Player.closeGuis();
+				}
+				newKey = false;
+				Player['actions']['guis']['questLog'] = !Player['actions']['guis']['questLog'];
+			} // opens the spellbook when "x" is pressed
+			if (keys[80] && newKey) {
+				newKey = false;
+				println(Player.generateSave());
+			} // generates the save file when "p" is pressed
 
 			if (Player['inventory']['silver'] >= 100) {
 				Player['inventory']['gold'] += 1;
@@ -721,6 +763,207 @@ var programCode = function (processingInstance) {
 			}
 			return tempSpace;
 		}; // calculates how many available slots are in the player's inventory
+		Player.generateSave = function () {
+			var tempSave = '[';
+			var sub;
+			if (!Player['loc']['sub']) {
+				sub = false;
+			} else {
+				sub = '[' + [
+					Player['loc']['sub'].ix,
+					Player['loc']['sub'].iy
+				] + ']';
+			}
+			var coordinates = '[' + [
+				Player['loc']['scene']['x'],
+				Player['loc']['scene']['y'],
+				Player['loc']['scene']['z'],
+				Player['loc']['x'],
+				Player['loc']['y'],
+				Player['loc']['wx'],
+				Player['loc']['wy'],
+				sub
+			] + '],';
+			var bagItems = [
+				'{',
+				'{',
+				'{',
+				'{',
+				'{'
+			];
+			for (var i = 1; i < 6; i++) {
+				if (Player['inventory']['bagSlots']['bag' + i] !== 'nothing') {
+					var tempItems = Object.keys(Player['inventory']['bags']['bag' + i]);
+					for (var j = 0; j < tempItems.length; j++) {
+						var name = tempItems[j];
+						var num = Player['inventory']['bags']['bag' + i][tempItems[j]]
+						bagItems[i - 1] += '\'' + name + '\'' + ': ' + num + ',';
+					}
+				}
+				bagItems[i - 1] += '}';
+			}
+			var playerAbilities = [];
+			var tempAbilities = Object.keys(Player['inventory']['abilities']);
+			for (var i = 0; i < tempAbilities.length; i++) {
+				var a = tempAbilities[i];
+				if (Player['inventory']['abilities'][a]) {
+					playerAbilities.push('\'' + a + '\'');
+				}
+			}
+			var playerQuests = [];
+			var tempQuests = Object.keys(Player['inventory']['quests']);
+			for (var i = 0; i < tempQuests.length; i++) {
+				var q = tempQuests[i];
+				if (Player['inventory']['abilities'][a]) {
+					playerQuests.push('\'' + q + '\': ' + Player['inventory']['quests'][q]);
+				}
+			}
+
+
+			var completedQuests = '';
+			for (var i = 0; i < Player['actions']['completedQuests'].length; i++) {
+				completedQuests += '\'' + Player['actions']['completedQuests'] + '\',';
+			}
+
+			var used = [];
+			for (var i = 0; i < Player['actions']['used'].length; i++) {
+				used.push('[' + Player['actions']['used'][i] + ']');
+			}
+			var inventory = '[' + [
+				Player['inventory']['gold'],
+				Player['inventory']['silver'],
+				'[' + [
+					'\'' + Player['inventory']['bagSlots']['bag1'] + '\'',
+					'\'' + Player['inventory']['bagSlots']['bag2'] + '\'',
+					'\'' + Player['inventory']['bagSlots']['bag3'] + '\'',
+					'\'' + Player['inventory']['bagSlots']['bag4'] + '\'',
+					'\'' + Player['inventory']['bagSlots']['bag5'] + '\'',
+				] + ']',
+				'[' + bagItems + ']',
+				'[' + [
+					'\'' + Player['inventory']['equipment']['head'] + '\'',
+					'\'' + Player['inventory']['equipment']['neck'] + '\'',
+					'\'' + Player['inventory']['equipment']['shoulders'] + '\'',
+					'\'' + Player['inventory']['equipment']['chest'] + '\'',
+					'\'' + Player['inventory']['equipment']['wrists'] + '\'',
+					'\'' + Player['inventory']['equipment']['hands'] + '\'',
+					'\'' + Player['inventory']['equipment']['finger'] + '\'',
+					'\'' + Player['inventory']['equipment']['legs'] + '\'',
+					'\'' + Player['inventory']['equipment']['waist'] + '\'',
+					'\'' + Player['inventory']['equipment']['feet'] + '\'',
+					'\'' + Player['inventory']['equipment']['mainHand'] + '\'',
+					'\'' + Player['inventory']['equipment']['offHand'] + '\'',
+					'\'' + Player['inventory']['equipment']['hair'] + '\'',
+				] + ']',
+				'[' + playerAbilities + ']',
+				'[' + [
+					'\'' + Player['inventory']['abilityBar']['1'] + '\'',
+					'\'' + Player['inventory']['abilityBar']['2'] + '\'',
+					'\'' + Player['inventory']['abilityBar']['3'] + '\'',
+					'\'' + Player['inventory']['abilityBar']['4'] + '\'',
+					'\'' + Player['inventory']['abilityBar']['5'] + '\'',
+				] + ']',
+				'{' + playerQuests + '}',
+			] + '],';
+			var stats = '[' + [
+				Player['stats']['curEndurance'],
+				Player['stats']['curFortitude'],
+				Player['stats']['xp'],
+				Player['stats']['level'],
+				Player['stats']['nextLevel']
+			] + '],';
+			var actions = '[' + [
+				'[' + completedQuests + ']',
+				'[' + used + ']'
+			] + ']';
+			tempSave += coordinates;
+			tempSave += inventory;
+			tempSave += stats;
+			tempSave += actions;
+			tempSave += '];'
+			return tempSave;
+		};
+		Player.loadSave = function () {
+			Player['loc']['scene']['x'] = saveFile[0][0];
+			Player['loc']['scene']['y'] = saveFile[0][1];
+			Player['loc']['scene']['z'] = saveFile[0][2];
+			Player['loc']['x'] = saveFile[0][3];
+			Player['loc']['y'] = saveFile[0][4];
+			Player['loc']['wx'] = saveFile[0][5];
+			Player['loc']['wy'] = saveFile[0][6];
+			if (!saveFile[0][7]) {
+				Player['loc']['sub'] = saveFile[0][7];
+			} else {
+				var w = World.maps[saveFile[0][0]][saveFile[0][1]][saveFile[0][2]];
+				for (var i = 0; i < w.tiles.length; i++) {
+					if (saveFile[0][7][0] === w.tiles[i].interior.ix && saveFile[0][7][1] === w.tiles[i].interior.iy) {
+						Player['loc']['sub'] = w.tiles[i].interior;
+					}
+				}
+			}
+
+			Player['inventory']['gold'] = saveFile[1][0];
+			Player['inventory']['silver'] = saveFile[1][1];
+			for (var i = 1; i < 6; i++) {
+				Player['inventory']['bagSlots']['bag' + i] = saveFile[1][2][i - 1];
+				Player['inventory']['bags']['bag' + i] = saveFile[1][3][i - 1];
+				Player['inventory']['abilityBar'][i] = saveFile[1][6][i - 1];
+			}
+			var tempKeys = Object.keys(Player['inventory']['equipment']);
+			for (var i = 0; i < tempKeys.length; i++) {
+				if (saveFile[1][4][i] !== 'nothing') {
+					items[saveFile[1][4][i]].use();
+				}
+				Player['inventory']['equipment'][tempKeys[i]] = saveFile[1][4][i];
+			}
+			for (var i = 0; i < saveFile[1][5].length; i++) {
+				Player['inventory']['abilities'][saveFile[1][5][i]] = true;
+			}
+			Player['inventory']['quests'] = saveFile[1][7];
+			var tempKeys = Object.keys(saveFile[1][7]);
+			for (var i = 0; i < tempKeys.length; i++) {
+				var q = quests[tempKeys[i]];
+				if (q.amount <= saveFile[1][7][tempKeys[i]] || q.type === 'speak') {
+					q.status = 'complete';
+				} else {
+					q.status = 'accepted';
+				}
+			}
+
+			Player['stats']['curEndurance'] = saveFile[2][0];
+			Player['stats']['curFortitude'] = saveFile[2][1];
+			Player['stats']['xp'] = saveFile[2][2];
+			Player['stats']['level'] = saveFile[2][3];
+			Player['stats']['nextLevel'] = saveFile[2][4];
+
+			Player['actions']['completedQuests'] = saveFile[3][0];
+			for (var i = 0; i < saveFile[3][0].length; i++) {
+				quests[saveFile[3][0][i]].status = 'complete';
+			}
+			Player['actions']['used'] = saveFile[3][1];
+			for (var i = 0; i < saveFile[3][1].length; i++) {
+				var w = World.maps[saveFile[3][1][i][0]][saveFile[3][1][i][1]][saveFile[3][1][i][2]];
+				var ent = saveFile[3][1][i];
+				if (ent.length > 5) {
+					for (var j = 0; j < w.tiles.length; j++) {
+						if (ent[3] === w.tiles[j].x / REAL_SIZE && ent[4] === w.tiles[j].y / REAL_SIZE) {
+							var t = w.tiles[j].interior;
+							for (var k = 0; k < t.storedEntities.length; k++) {
+								if (ent[5] === t.storedEntities[k].x / REAL_SIZE && ent[6] === t.storedEntities[k].y / REAL_SIZE) {
+									t.storedEntities[k].alive = false;
+								}
+							}
+						}
+					}
+				} else {
+					for (var j = 0; j < w.storedEntities.length; j++) {
+						if (ent[3] === w.storedEntities[j].x / REAL_SIZE && ent[4] === w.storedEntities[j].y / REAL_SIZE) {
+							w.storedEntities[j].alive = false;
+						}
+					}
+				}
+			}
+		};
 		{
 			var Image = function (pixmap, colors, size, name, allColors) {
 				// sets the pixel size if not specified
@@ -7189,6 +7432,148 @@ var programCode = function (processingInstance) {
 				}
 				new AnimationSet(this.name + ' up', this.name + ' down', this.name + ' left', this.name + ' right', this.name)
 			};
+			var ShortHairAnimation = function (a, b, c, d, colors, speed, name) {
+				this.a = a;
+				this.b = b;
+				this.c = c;
+				this.d = d;
+				this.colors = colors;
+				this.speed = speed;
+				this.name = name;
+				load.animations.push(this);
+			};
+			ShortHairAnimation.prototype.load = function () {
+				var def = {
+					'up': [[
+						'                ',
+						'                ',
+						'      DDDD      ',
+						'     DEFFED     ',
+						'     DFFFFD     ',
+						'    DEEFEFEC    ',
+						'    CDFEEEDC    ',
+						'    CDDEDDDC    ',
+						'     CDDDDC     ',
+						'      CCCC      ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ']],
+					'down': [[
+						'                ',
+						'                ',
+						'      DDDD      ',
+						'     DFEFFD     ',
+						'     DEEEFD     ',
+						'    CDDDEEFC    ',
+						'    CCCDDDCC    ',
+						'    C   D  C    ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ']],
+					'left': [[
+						'                ',
+						'                ',
+						'      DDDD      ',
+						'     DEFFED     ',
+						'     DFFFFD     ',
+						'    CEEEFEDD    ',
+						'    CDCCEDED    ',
+						'    C   D DD    ',
+						'          CC    ',
+						'         CC     ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ']],
+					'right': [[
+						'                ',
+						'                ',
+						'      DDDD      ',
+						'     DEFFED     ',
+						'     DFFFFD     ',
+						'    DDEFEEEC    ',
+						'    DEDECCDC    ',
+						'    DD D   C    ',
+						'    CC          ',
+						'     CC         ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ']]
+				};
+				var keys = {
+					'C': this.a,
+					'D': this.b,
+					'E': this.c,
+					'F': this.d,
+					' ': ' '
+				};
+				var final = {
+					'up': [],
+					'down': [],
+					'left': [],
+					'right': []
+				};
+				var dir = Object.keys(def);
+				for (var j = 0; j < dir.length; j++) {
+					for (var i = 0; i < def[dir[j]].length; i++) {
+						final[dir[j]][i] = [];
+						for (var y = 0; y < def[dir[j]][i].length; y++) {
+							final[dir[j]][i][y] = '';
+							for (var x = 0; x < def[dir[j]][i][y].length; x++) {
+								var p = def[dir[j]][i][y][x];
+								final[dir[j]][i][y] += String(keys[p]);
+							}
+						}
+					}
+					new Animation(final[dir[j]], this.colors, this.speed, this.name + ' ' + dir[j]);
+				}
+				new AnimationSet(this.name + ' up', this.name + ' down', this.name + ' left', this.name + ' right', this.name)
+			};
 
 		} // animation constructor
 		var textKeys = {
@@ -7638,6 +8023,9 @@ var programCode = function (processingInstance) {
 					if (t.tile.type === 'character' && hover) {
 						createAlert(t.x + x, t.y + y - REAL_SIZE, 'Click to view armor', 'charGui');
 						if (mouseIsPressed && newClick) {
+							if (!Player['actions']['guis']['characterPane']) {
+								Player.closeGuis();
+							}
 							newClick = false;
 							Player['actions']['guis']['characterPane'] = !Player['actions']['guis']['characterPane'];
 						}
@@ -7645,6 +8033,9 @@ var programCode = function (processingInstance) {
 					if (t.tile.type === 'questlog' && hover) {
 						createAlert(t.x + x, t.y + y - REAL_SIZE, 'Click to view quests', 'questLogGui');
 						if (mouseIsPressed && newClick) {
+							if (!Player['actions']['guis']['questLog']) {
+								Player.closeGuis();
+							}
 							newClick = false;
 							Player['actions']['guis']['questLog'] = !Player['actions']['guis']['questLog'];
 						}
@@ -7652,6 +8043,9 @@ var programCode = function (processingInstance) {
 					if (t.tile.type === 'spellbook' && hover) {
 						createAlert(t.x + x, t.y + y - REAL_SIZE, 'Click to view spells', 'spellBookGui');
 						if (mouseIsPressed && newClick) {
+							if (!Player['actions']['guis']['spellBookGui']) {
+								Player.closeGuis();
+							}
 							newClick = false;
 							Player['spellBookGui'].page = 0;
 							Player['actions']['guis']['spellBook'] = !Player['actions']['guis']['spellBook'];
@@ -7811,14 +8205,14 @@ var programCode = function (processingInstance) {
 									if (mouseIsPressed && newClick) {
 										newClick = false;
 										if (mouseButton === 37) {
-											if (items[tempKeys[i]].useable() && !Player['actions']['vendor']) {
+											if (items[tempKeys[i]].useable() && !Player['actions']['guis']['vendor']) {
 												items[tempKeys[i]].use();
 												if (bagItems[tempKeys[i]] > 1) {
 													bagItems[tempKeys[i]]--;
 												} else {
 													delete bagItems[tempKeys[i]];
 												}
-											} else if (Player['actions']['vendor'] !== false) {
+											} else if (Player['actions']['guis']['vendor'] !== false) {
 												Player['inventory']['silver'] += items[tempKeys[i]].sell;
 												if (bagItems[tempKeys[i]] > 1) {
 													bagItems[tempKeys[i]]--;
@@ -7873,7 +8267,7 @@ var programCode = function (processingInstance) {
 						if (t.tile.type === 'close' && Hover(t.x + x, t.y + y, 32, 32)) {
 							if (mouseIsPressed && newClick) {
 								newClick = false;
-								Player['actions']['looting'] = false;
+								Player['actions']['guis']['looting'] = false;
 							}
 						} // detects if a close button is clicked
 						if (t.tile.type === 'slot') {
@@ -7886,7 +8280,7 @@ var programCode = function (processingInstance) {
 										if (loot.length > 1) {
 											loot.shift();
 										} else {
-											Player['actions']['looting'] = false;
+											Player['actions']['guis']['looting'] = false;
 										}
 									}
 									newClick = false;
@@ -7968,7 +8362,7 @@ var programCode = function (processingInstance) {
 						if (t.tile.type === 'close' && Hover(t.x + x, t.y + y, 32, 32)) {
 							if (mouseIsPressed && newClick) {
 								newClick = false;
-								Player['actions']['quest'] = false;
+								Player['actions']['guis']['quest'] = false;
 							}
 						} // detects if a close button is clicked
 						if (t.tile.type === 'accept' && Hover(t.x + x, t.y + y, 32, 32)) {
@@ -7989,7 +8383,7 @@ var programCode = function (processingInstance) {
 										}
 									}
 								}
-								Player['actions']['quest'] = false;
+								Player['actions']['guis']['quest'] = false;
 							}
 						} // detects if a accept button is clicked
 					}
@@ -8161,7 +8555,7 @@ var programCode = function (processingInstance) {
 						if (t.tile.type === 'close' && Hover(t.x + x, t.y + y, 32, 32)) {
 							if (mouseIsPressed && newClick) {
 								newClick = false;
-								Player['actions']['vendor'] = false;
+								Player['actions']['guis']['vendor'] = false;
 							}
 						} // detects if a close button is clicked
 						if (t.tile.type === 'slot') {
@@ -8326,7 +8720,7 @@ var programCode = function (processingInstance) {
 								Player['stats']['xp'] += xpGen; // gives the player xp
 								new Popup(xpGen + ' xp', GUI_TEXT_COLOR, entity.x, entity.y, 'killXp');
 								Player['actions']['fighting'] = false; // set the fighting variable to false
-								Player['actions']['looting'] = this.genLoot(); // set the looting variable to a loot array
+								Player['actions']['guis']['looting'] = this.genLoot(); // set the looting variable to a loot array
 								this.reset(); // reset the health, energy, and cooldowns of the enemy
 							} // if the enemy has no health
 							a.animation.reset(); // resets the animation before drawing it
@@ -8359,7 +8753,8 @@ var programCode = function (processingInstance) {
 				this.p.image(images[images[this.animationSet]['down']]['a'][0]);
 				var tempKeys = Object.keys(this.equipment);
 				for (var i = 0; i < tempKeys.length; i++) {
-					//var anim = items[tempKeys[i]].animationSet;
+					var anim = images[images[items[this.equipment[tempKeys[i]]].animationSet].down].a[0];
+					this.p.image(anim);
 				}
 				this.image = this.name;
 				images[this.name] = {
@@ -8531,6 +8926,23 @@ var programCode = function (processingInstance) {
 			};
 		} // armor constructors
 		{
+			var Rune = function (name, image, buy, sell, teaches) {
+				Item.call(this, name, image, buy, sell);
+				this.text = this.name + '\n\nTeaches you ' + teaches;
+				this.teaches = teaches;
+			};
+			Rune.prototype = Object.create(Item.prototype);
+			Rune.prototype.constructor = Rune;
+			Rune.prototype.use = function () {
+				abilities[this.teaches].learn();
+			};
+			Rune.prototype.useable = function () {
+				if (Player['inventory']['abilities'][this.teaches] !== true) {
+					return true;
+				}
+			};
+		} // rune constructors
+		{
 			var bag8 = new Bag([
 				'eaax',
 				'nkko',
@@ -8595,7 +9007,7 @@ var programCode = function (processingInstance) {
 			};
 			Interacting.prototype.use = function () {
 				if (this.type === 'loot') {
-					Player['actions']['looting'] = this.genLoot();
+					Player['actions']['guis']['looting'] = this.genLoot();
 				} else if (this.type === 'trigger') {
 					for (var i = 0; i < this.quests.length; i++) {
 						if (Player['inventory']['quests'][this.quests[i]] !== undefined) {
@@ -8678,13 +9090,15 @@ var programCode = function (processingInstance) {
 						if (q.requires === 'nothing') {
 							if (!Player['actions']['completedQuests'].includes(q.name)) {
 								if (q.status === 'unaccepted') {
-									Player['actions']['quest'] = q.name;
+									Player.closeGuis();
+									Player['actions']['guis']['quest'] = q.name;
 								}
 							}
 						} else {
 							if (Player['actions']['completedQuests'].includes(q.requires)) {
 								if (q.status === 'unaccepted') {
-									Player['actions']['quest'] = q.name;
+									Player.closeGuis();
+									Player['actions']['guis']['quest'] = q.name;
 								}
 							}
 						}
@@ -8696,7 +9110,8 @@ var programCode = function (processingInstance) {
 						q = quests[q];
 						if (!Player['actions']['completedQuests'].includes(q.name)) {
 							if (q.status !== 'unaccepted') {
-								Player['actions']['quest'] = q.name;
+								Player.closeGuis();
+								Player['actions']['guis']['quest'] = q.name;
 							}
 						}
 					}
@@ -8766,8 +9181,11 @@ var programCode = function (processingInstance) {
 				this.tiles = []; // stores the tiles
 				this.storedEntities = []; // stores the entities
 				this.p = createGraphics(this.width, this.height, JAVA2D); // creates an image
+				this.t = createGraphics(this.width, this.height, JAVA2D);
 				this.p.background(pal[' ']); // sets the background
+				this.t.background(pal[' ']);
 				this.p.noStroke();
+				this.t.noStroke();
 				this.animations = [];
 				this.tops = [];
 				// loops through the map array
@@ -8790,15 +9208,11 @@ var programCode = function (processingInstance) {
 								if (b.image[i].width !== undefined) {
 									if (b.image[i].constructor !== Animation) {
 										this.p.image(b.image[i].p, x * REAL_SIZE - b.image[i].offset.x, y * REAL_SIZE - b.image[i].offset.y);
+										if (b.image[i].height > REAL_SIZE) {
+											this.t.image(b.image[i].top, x * REAL_SIZE - b.image[i].offset.x, y * REAL_SIZE - b.image[i].offset.y);
+										}
 									} else {
 										this.animations.push({
-											tile: b.image[i],
-											x: x * REAL_SIZE - b.image[i].offset.x,
-											y: y * REAL_SIZE - b.image[i].offset.y
-										});
-									}
-									if (b.image[i].height > REAL_SIZE) {
-										this.tops.push({
 											tile: b.image[i],
 											x: x * REAL_SIZE - b.image[i].offset.x,
 											y: y * REAL_SIZE - b.image[i].offset.y
@@ -8813,18 +9227,14 @@ var programCode = function (processingInstance) {
 							if (b.image.p !== undefined) {
 								if (b.image.constructor !== Animation) {
 									this.p.image(b.image.p, x * REAL_SIZE - b.image.offset.x, y * REAL_SIZE - b.image.offset.y);
+									if (b.image.height > REAL_SIZE) {
+										this.t.image(b.image.top, x * REAL_SIZE - b.image.offset.x, y * REAL_SIZE - b.image.offset.y);
+									}
 								} else {
 									this.animations.push({
 										tile: b.image,
 										x: x * REAL_SIZE,
 										y: y * REAL_SIZE
-									});
-								}
-								if (b.image.height > REAL_SIZE) {
-									this.tops.push({
-										tile: b.image,
-										x: x * REAL_SIZE - b.image.offset.x,
-										y: y * REAL_SIZE - b.image.offset.y
 									});
 								}
 							} else {
@@ -8842,7 +9252,7 @@ var programCode = function (processingInstance) {
 						this.storedEntities.push({
 							name: b['name'],
 							entity: e,
-							image: e.image,
+							image: images[e.image],
 							x: b.x * REAL_SIZE,
 							y: b.y * REAL_SIZE,
 							type: entityKeys[i],
@@ -8852,6 +9262,7 @@ var programCode = function (processingInstance) {
 					}
 				}
 				this.p = this.p.get();
+				this.t = this.t.get();
 				World.interiors.push(this);
 			};
 			Interior.prototype.reset = function () {
@@ -8895,8 +9306,11 @@ var programCode = function (processingInstance) {
 					World.maps[this.x][this.y] = [];
 				} // creates a new y array if it is not defined
 				this.p = createGraphics(this.width, this.height, JAVA2D); // creates an image
+				this.t = createGraphics(this.width, this.height, JAVA2D);
 				this.p.background(pal[' ']); // sets the background
+				this.t.background(pal[' ']);
 				this.p.noStroke();
+				this.t.noStroke();
 				// loops through the map array
 				for (var y = 0; y < this.map.length; y++) {
 					for (var x = 0; x < this.map[y].length; x++) {
@@ -8920,15 +9334,11 @@ var programCode = function (processingInstance) {
 								if (b.image[i].width !== undefined) {
 									if (b.image[i].constructor !== Animation) {
 										this.p.image(b.image[i].p, x * REAL_SIZE - b.image[i].offset.x, y * REAL_SIZE - b.image[i].offset.y);
+										if (b.image[i].height > REAL_SIZE) {
+											this.t.image(b.image[i].top, x * REAL_SIZE - b.image[i].offset.x, y * REAL_SIZE - b.image[i].offset.y);
+										}
 									} else {
 										this.animations.push({
-											tile: b.image[i],
-											x: x * REAL_SIZE - b.image[i].offset.x,
-											y: y * REAL_SIZE - b.image[i].offset.y
-										});
-									}
-									if (b.image[i].height > REAL_SIZE) {
-										this.tops.push({
 											tile: b.image[i],
 											x: x * REAL_SIZE - b.image[i].offset.x,
 											y: y * REAL_SIZE - b.image[i].offset.y
@@ -8943,18 +9353,14 @@ var programCode = function (processingInstance) {
 							if (b.image.p !== undefined) {
 								if (b.image.constructor !== Animation) {
 									this.p.image(b.image.p, x * REAL_SIZE - b.image.offset.x, y * REAL_SIZE - b.image.offset.y);
+									if (b.image.height > REAL_SIZE) {
+										this.t.image(b.image.top, x * REAL_SIZE - b.image.offset.x, y * REAL_SIZE - b.image.offset.y);
+									}
 								} else {
 									this.animations.push({
 										tile: b.image,
 										x: x * REAL_SIZE,
 										y: y * REAL_SIZE
-									});
-								}
-								if (b.image.height > REAL_SIZE) {
-									this.tops.push({
-										tile: b.image,
-										x: x * REAL_SIZE - b.image.offset.x,
-										y: y * REAL_SIZE - b.image.offset.y
 									});
 								}
 							} else {
@@ -8982,6 +9388,7 @@ var programCode = function (processingInstance) {
 					}
 				}
 				this.p = this.p.get();
+				this.t = this.t.get();
 				World.maps[this.x][this.y][this.z] = this;
 			};
 			Screen.prototype.reset = function () {
@@ -9038,6 +9445,7 @@ var programCode = function (processingInstance) {
 				if (World.maps[x] !== undefined && Player['loc']['shifting'] === 'up') {
 					if (World.maps[x][y - 1] !== undefined) {
 						if (World.maps[x][y - 1][z] !== undefined) {
+							image(World.maps[x][y + 1][z].p, 0, Player['loc']['transition']['y'] + selMap.p.height);
 							for (var i = 0; i < World.maps[x][y - 1][z].storedEntities.length; i++) {
 								var e = World.maps[x][y - 1][z].storedEntities[i];
 								if (e.alive) {
@@ -9195,7 +9603,8 @@ var programCode = function (processingInstance) {
 								if (mouseIsPressed && newClick) {
 									newClick = false;
 									if (distance < 64) {
-										Player['actions']['vendor'] = e;
+										Player.closeGuis();
+										Player['actions']['guis']['vendor'] = e;
 									} else {
 										new Popup('I need to get closer', GUI_TEXT_COLOR, Player['loc']['x'] - REAL_SIZE, Player['loc']['y'], 'vendorDistance');
 									}
@@ -9213,6 +9622,26 @@ var programCode = function (processingInstance) {
 												if (Player['inventory']['quests'][e.entity.quests[i]] !== undefined) {
 													e.entity.use();
 													e.alive = false;
+													if (!e.entity.persistant) {
+														if (Player['loc']['sub'] !== false) {
+															Player['actions']['used'].push([
+																selMap.x,
+																selMap.y,
+																selMap.z,
+																selMap.ix,
+																selMap.iy,
+																e.x / REAL_SIZE,
+																e.y / REAL_SIZE]);
+														} else {
+															Player['actions']['used'].push([
+																selMap.x,
+																selMap.y,
+																selMap.z,
+																e.x / REAL_SIZE,
+																e.y / REAL_SIZE]);
+														}
+														console.log(Player['actions']['used']);
+													}
 												}
 											}
 										} else {
@@ -9262,8 +9691,34 @@ var programCode = function (processingInstance) {
 				if (Player['loc']['sub'] !== false) {
 					selMap = Player['loc']['sub'];
 				}
-				for (var i = 0; i < selMap.tops.length; i++) {
-					image(selMap.tops[i].tile.top, selMap.tops[i].x, selMap.tops[i].y);
+				image(selMap.t, Player['loc']['transition']['x'], Player['loc']['transition']['y']);
+				if (World.maps[x - 1] !== undefined && Player['loc']['shifting'] === 'left') {
+					if (World.maps[x - 1][y] !== undefined) {
+						if (World.maps[x - 1][y][z] !== undefined) {
+							image(World.maps[x - 1][y][z].t, Player['loc']['transition']['x'] - selMap.p.width, 0);
+						}
+					}
+				}
+				if (World.maps[x + 1] !== undefined && Player['loc']['shifting'] === 'right') {
+					if (World.maps[x + 1][y] !== undefined) {
+						if (World.maps[x + 1][y][z] !== undefined) {
+							image(World.maps[x + 1][y][z].t, Player['loc']['transition']['x'] + selMap.p.width, 0);
+						}
+					}
+				}
+				if (World.maps[x] !== undefined && Player['loc']['shifting'] === 'up') {
+					if (World.maps[x][y - 1] !== undefined) {
+						if (World.maps[x][y - 1][z] !== undefined) {
+							image(World.maps[x][y + 1][z].t, 0, Player['loc']['transition']['y'] + selMap.p.height);
+						}
+					}
+				}
+				if (World.maps[x] !== undefined && Player['loc']['shifting'] === 'down') {
+					if (World.maps[x][y + 1] !== undefined) {
+						if (World.maps[x][y + 1][z] !== undefined) {
+							image(World.maps[x][y + 1][z].t, 0, Player['loc']['transition']['y'] + selMap.p.height);
+						}
+					}
 				}
 			}
 			World.transition.run = function (type, value) {
@@ -12316,1810 +12771,606 @@ var programCode = function (processingInstance) {
 					'                ']], pal, armorAnimation, 'humanDown');
 			new Animation([
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    /122211.    ',
-					'    /111110.    ',
-					'    .1j1100.    ',
-					'    .01000.     ',
-					'     .00/.      ',
-					'      /100/     ',
-					'      /1100.    ',
-					'     /22221.    ',
-					'     .121/11.   ',
-					'     .010/10.   ',
-					'    .0.0/110.   ',
-					'    ./.0.00.    ',
-					'     .0.0..     ',
-					'     .0.10.     ',
-					'      .//0.     ',
-					'     .0.110.    ',
-					'     ./.000.    ',
-					'      .....     ',
-					'                '],
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    /222122.    ',
+				 '    .111110.    ',
+				 '    .1j1100.    ',
+				 '    .01100.     ',
+				 '     ./000/     ',
+				 '      ./100.    ',
+				 '     /22221.    ',
+				 '     .121/11.   ',
+				 '     .010/10.   ',
+				 '    .0.0/110.   ',
+				 '    ./.0.00.    ',
+				 '     .0.0..     ',
+				 '     .0.10.     ',
+				 '      .//0.     ',
+				 '     .0.110.    ',
+				 '     ./.000.    ',
+				 '      .....     ',
+				 '                '],
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    /122211.    ',
-					'    /111110.    ',
-					'    .1j1100.    ',
-					'    .01000.     ',
-					'     .00/.      ',
-					'      /100/     ',
-					'      /1100.    ',
-					'     /222211.   ',
-					'     .121/111.  ',
-					'    ..0100/21.  ',
-					'   .0/.0//110.  ',
-					'   .//.0/.00.   ',
-					'    ..0.0...    ',
-					'     ..010.     ',
-					'      ./00/.    ',
-					'      ../00.    ',
-					'      ././.     ',
-					'      ....      ',
-					'                '],
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    /222122.    ',
+				 '    .111110.    ',
+				 '    .1j1100.    ',
+				 '    .01100.     ',
+				 '     ./000/     ',
+				 '      ./100.    ',
+				 '     /222211.   ',
+				 '     .121/111.  ',
+				 '    ..0100/21.  ',
+				 '   .0/.0//110.  ',
+				 '   .//.0/.00.   ',
+				 '    ..0.0...    ',
+				 '     ..010.     ',
+				 '      ./00/.    ',
+				 '      ../00.    ',
+				 '      ././.     ',
+				 '      ....      ',
+				 '                '],
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    /122211.    ',
-					'    /111110.    ',
-					'    .1j1100.    ',
-					'    .01000.     ',
-					'     .00/.      ',
-					'      /100/     ',
-					'      /1100..   ',
-					'     /222211/.  ',
-					'   //.121/111.  ',
-					'  .01.0100.21.  ',
-					'  .10..0//.11.  ',
-					'   .../0../..   ',
-					'     ./00..     ',
-					'     .001.      ',
-					'      ./00.     ',
-					'      ../0.     ',
-					'       ....     ',
-					'       ...      ',
-					'                '],
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    /222122.    ',
+				 '    .111110.    ',
+				 '    .1j1100.    ',
+				 '    .01100.     ',
+				 '     ./000/     ',
+				 '      ./100..   ',
+				 '     /222211/.  ',
+				 '   //.121/111.  ',
+				 '  .01.0100.21.  ',
+				 '  .10..0//.11.  ',
+				 '   .../0../..   ',
+				 '     ./00..     ',
+				 '     .001.      ',
+				 '      ./00.     ',
+				 '      ../0.     ',
+				 '       ....     ',
+				 '       ...      ',
+				 '                '],
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    /122211.    ',
-					'    /111110.    ',
-					'    .1j1100.    ',
-					'    .01000.     ',
-					'     .00/.      ',
-					'      /100/.    ',
-					'      /11000..  ',
-					'   ///2222111/. ',
-					'  /20.121/./1/. ',
-					'  .00.0100/.11. ',
-					'   ...000//.11. ',
-					'     .1///. ..  ',
-					'     .00/..     ',
-					'     .0/..      ',
-					'     .0//.      ',
-					'      .0/..     ',
-					'       ....     ',
-					'        ..      ',
-					'                '],
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    /111110.    ',
+				 '    .111110.    ',
+				 '    .1j1100.    ',
+				 '    .01100.     ',
+				 '     ./000/.    ',
+				 '      ./1000..  ',
+				 '   ///2222111/. ',
+				 '  /20.121/./1/. ',
+				 '  .00.0100/.11. ',
+				 '   ...000//.11. ',
+				 '     .1///. ..  ',
+				 '     .00/..     ',
+				 '     .0/..      ',
+				 '     .0//.      ',
+				 '      .0/..     ',
+				 '       ....     ',
+				 '        ..      ',
+				 '                '],
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    /122211.    ',
-					'    /111110.    ',
-					'    .1j1100.    ',
-					'    .01000.     ',
-					'     .00/.      ',
-					'      /100/     ',
-					'      /1100..   ',
-					'     /222211/.  ',
-					'   //.121/111.  ',
-					'  .01.0100.21.  ',
-					'  .10..0//.11.  ',
-					'   .../0../..   ',
-					'     ./00..     ',
-					'     .001.      ',
-					'      ./00.     ',
-					'      ../0.     ',
-					'       ....     ',
-					'       ...      ',
-					'                '],
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    /222122.    ',
+				 '    .111110.    ',
+				 '    .1j1100.    ',
+				 '    .01100.     ',
+				 '     ./000/     ',
+				 '      ./100..   ',
+				 '     /222211/.  ',
+				 '   //.121/111.  ',
+				 '  .01.0100.21.  ',
+				 '  .10..0//.11.  ',
+				 '   .../0../..   ',
+				 '     ./00..     ',
+				 '     .001.      ',
+				 '      ./00.     ',
+				 '      ../0.     ',
+				 '       ....     ',
+				 '       ...      ',
+				 '                '],
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    /122211.    ',
-					'    /111110.    ',
-					'    .1j1100.    ',
-					'    .01000.     ',
-					'     .00/.      ',
-					'      /100/     ',
-					'      /1100.    ',
-					'     /222211.   ',
-					'     .121/111.  ',
-					'    ..0100/21.  ',
-					'   .0/.0//110.  ',
-					'   .//.0/.00.   ',
-					'    ..0.0...    ',
-					'     ..010.     ',
-					'      ./00/.    ',
-					'      ../00.    ',
-					'      ././.     ',
-					'      ....      ',
-					'                '],
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    /222122.    ',
+				 '    .111110.    ',
+				 '    .1j1100.    ',
+				 '    .01100.     ',
+				 '     ./000/     ',
+				 '      ./100.    ',
+				 '     /222211.   ',
+				 '     .121/111.  ',
+				 '    ..0100/21.  ',
+				 '   .0/.0//110.  ',
+				 '   .//.0/.00.   ',
+				 '    ..0.0...    ',
+				 '     ..010.     ',
+				 '      ./00/.    ',
+				 '      ../00.    ',
+				 '      ././.     ',
+				 '      ....      ',
+				 '                '],
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    /122211.    ',
-					'    /111110.    ',
-					'    .1j1100.    ',
-					'    .01000.     ',
-					'     .00/.      ',
-					'      /100/     ',
-					'      /1100.    ',
-					'     /22221.    ',
-					'     .121/11.   ',
-					'     .010/10.   ',
-					'    .0.0/110.   ',
-					'    ./.0.00.    ',
-					'     .0.0..     ',
-					'     .0.10.     ',
-					'      .//0.     ',
-					'     .0.110.    ',
-					'     ./.000.    ',
-					'      .....     ',
-					'                '],
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    /222122.    ',
+				 '    .111110.    ',
+				 '    .1j1100.    ',
+				 '    .01100.     ',
+				 '     ./000/     ',
+				 '      ./100.    ',
+				 '     /22221.    ',
+				 '     .121/11.   ',
+				 '     .010/10.   ',
+				 '    .0.0/110.   ',
+				 '    ./.0.00.    ',
+				 '     .0.0..     ',
+				 '     .0.10.     ',
+				 '      .//0.     ',
+				 '     .0.110.    ',
+				 '     ./.000.    ',
+				 '      .....     ',
+				 '                '],
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    /122211.    ',
-					'    /111110.    ',
-					'    .1j1100.    ',
-					'    .01000.     ',
-					'     .00/.      ',
-					'      /100/     ',
-					'      /110/     ',
-					'     /22221/    ',
-					'     /12/21/    ',
-					'     ./1/21/    ',
-					'     ../111.    ',
-					'     ../00.     ',
-					'     .0/...     ',
-					'     .0./0/.    ',
-					'     .././0/.   ',
-					'    .00..000.   ',
-					'    ./.../0.    ',
-					'     ......     ',
-					'                '],
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    /222211.    ',
+				 '    .111110.    ',
+				 '    .1j1100.    ',
+				 '    .01100.     ',
+				 '     ./000/     ',
+				 '      ./10/     ',
+				 '     /22221/    ',
+				 '     /12/21/    ',
+				 '     ./1/21/    ',
+				 '     ../111.    ',
+				 '     ../00.     ',
+				 '     .0/...     ',
+				 '     .0./0/.    ',
+				 '     .././0/.   ',
+				 '    .00..000.   ',
+				 '    ./.../0.    ',
+				 '     ......     ',
+				 '                '],
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    /122211.    ',
-					'    /111110.    ',
-					'    .1j1100.    ',
-					'    .01000.     ',
-					'     .00/.      ',
-					'      /10/      ',
-					'      /110/     ',
-					'     /22221/    ',
-					'     /1./21/    ',
-					'     /.021/     ',
-					'     .1111/     ',
-					'     ..00..     ',
-					'     .0..0.     ',
-					'    .10.101.    ',
-					'    .01..01.    ',
-					'   .10. .010.   ',
-					'   .00.  .00.   ',
-					'    ..   ...    ',
-					'                '],
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    /222121.    ',
+				 '    .111110.    ',
+				 '    .1j1100.    ',
+				 '    .01100.     ',
+				 '     ./00//     ',
+				 '      ./10/     ',
+				 '     /22221/    ',
+				 '     /1./21/    ',
+				 '     /.021/     ',
+				 '     .1111/     ',
+				 '     ..00..     ',
+				 '     .0..0.     ',
+				 '    .10.101.    ',
+				 '    .01..01.    ',
+				 '   .10. .010.   ',
+				 '   .00.  .00.   ',
+				 '    ..   ...    ',
+				 '                '],
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    /122211.    ',
-					'    /111110.    ',
-					'    .1j1100.    ',
-					'    .01000.     ',
-					'     .00/.      ',
-					'      /10/      ',
-					'      /11//     ',
-					'      ./22/     ',
-					'     ..002/.    ',
-					'    .1102//.    ',
-					'    .001/0.     ',
-					'     .../0.     ',
-					'    ..0..0.     ',
-					'   .010.101.    ',
-					'  .000..//00.   ',
-					'  .01.  ../00.  ',
-					'   ..     ...   ',
-					'                ',
-					'                '],
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    /222121.    ',
+				 '    .111110.    ',
+				 '    .1j1100.    ',
+				 '    .01100.     ',
+				 '     ./00//     ',
+				 '      ./1//     ',
+				 '      ./22/     ',
+				 '     ..002/.    ',
+				 '    .1102//.    ',
+				 '    .001/0.     ',
+				 '     .../0.     ',
+				 '    ..0..0.     ',
+				 '   .010.101.    ',
+				 '  .000..//00.   ',
+				 '  .01.  ../00.  ',
+				 '   ..     ...   ',
+				 '                ',
+				 '                '],
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    /122211.    ',
-					'    /111110.    ',
-					'    .1j1100.    ',
-					'    .01000.     ',
-					'     .00/.      ',
-					'      /10/      ',
-					'      /110/     ',
-					'     /22221/    ',
-					'     /1./21/    ',
-					'     /.021/     ',
-					'     .1111/     ',
-					'     ..00..     ',
-					'     .0..0.     ',
-					'    .10.101.    ',
-					'    .01..01.    ',
-					'   .10. .010.   ',
-					'   .00.  .00.   ',
-					'    ..   ...    ',
-					'                '],
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    /222121.    ',
+				 '    .111110.    ',
+				 '    .1j1100.    ',
+				 '    .01100.     ',
+				 '     ./00//     ',
+				 '      ./10/     ',
+				 '     /22221/    ',
+				 '     /1./21/    ',
+				 '     /.021/     ',
+				 '     .1111/     ',
+				 '     ..00..     ',
+				 '     .0..0.     ',
+				 '    .10.101.    ',
+				 '    .01..01.    ',
+				 '   .10. .010.   ',
+				 '   .00.  .00.   ',
+				 '    ..   ...    ',
+				 '                '],
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    /122211.    ',
-					'    /111110.    ',
-					'    .1j1100.    ',
-					'    .01000.     ',
-					'     .00/.      ',
-					'      /100/     ',
-					'      /110/     ',
-					'     /22221/    ',
-					'     /12/21/    ',
-					'     ./1/21/    ',
-					'     ../111.    ',
-					'     ../00.     ',
-					'     .0/...     ',
-					'     .0./0/.    ',
-					'     .././0/.   ',
-					'    .00..000.   ',
-					'    ./.../0.    ',
-					'     ......     ',
-					'                ']], pal, armorAnimation, 'humanLeft');
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    /222211.    ',
+				 '    .111110.    ',
+				 '    .1j1100.    ',
+				 '    .01100.     ',
+				 '     ./000/     ',
+				 '      ./10/     ',
+				 '     /22221/    ',
+				 '     /12/21/    ',
+				 '     ./1/21/    ',
+				 '     ../111.    ',
+				 '     ../00.     ',
+				 '     .0/...     ',
+				 '     .0./0/.    ',
+				 '     .././0/.   ',
+				 '    .00..000.   ',
+				 '    ./.../0.    ',
+				 '     ......     ',
+				 '                ']], pal, armorAnimation, 'humanLeft');
 			new Animation([
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    .112221/    ',
-					'    .011111/    ',
-					'    .0011j1.    ',
-					'     .00010.    ',
-					'      ./00.     ',
-					'     /001/      ',
-					'    .0011/      ',
-					'    .12222/     ',
-					'   .11/121.     ',
-					'   .01/010.     ',
-					'   .011/0.0.    ',
-					'    .00.0./.    ',
-					'     ..0.0.     ',
-					'     .01.0.     ',
-					'     .0//.      ',
-					'    .011.0.     ',
-					'    .000./.     ',
-					'     .....      ',
-					'                '],
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    .221222/    ',
+				 '    .011111.    ',
+				 '    .0011j1.    ',
+				 '     .00110.    ',
+				 '     /000/.     ',
+				 '    .001/.      ',
+				 '    .12222/     ',
+				 '   .11/121.     ',
+				 '   .01/010.     ',
+				 '   .011/0.0.    ',
+				 '    .00.0./.    ',
+				 '     ..0.0.     ',
+				 '     .01.0.     ',
+				 '     .0//.      ',
+				 '    .011.0.     ',
+				 '    .000./.     ',
+				 '     .....      ',
+				 '                '],
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    .112221/    ',
-					'    .011111/    ',
-					'    .0011j1.    ',
-					'     .00010.    ',
-					'      ./00.     ',
-					'     /001/      ',
-					'    .0011/      ',
-					'   .112222/     ',
-					'  .111/121.     ',
-					'  .12/0010..    ',
-					'  .011//0./0.   ',
-					'   .00./0.//.   ',
-					'    ...0.0..    ',
-					'     .010..     ',
-					'    ./00/.      ',
-					'    .00/..      ',
-					'     ././.      ',
-					'      ....      ',
-					'                '],
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    .221222/    ',
+				 '    .011111.    ',
+				 '    .0011j1.    ',
+				 '     .00110.    ',
+				 '     /000/.     ',
+				 '    .001/.      ',
+				 '   .112222/     ',
+				 '  .111/121.     ',
+				 '  .12/0010..    ',
+				 '  .011//0./0.   ',
+				 '   .00./0.//.   ',
+				 '    ...0.0..    ',
+				 '     .010..     ',
+				 '    ./00/.      ',
+				 '    .00/..      ',
+				 '     ././.      ',
+				 '      ....      ',
+				 '                '],
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    .112221/    ',
-					'    .011111/    ',
-					'    .0011j1.    ',
-					'     .00010.    ',
-					'      ./00.     ',
-					'     /001/      ',
-					'   ..0011/      ',
-					'  ./112222/     ',
-					'  .111/121.//   ',
-					'  .12.0010.10.  ',
-					'  .11.//0..01.  ',
-					'   ../..0/...   ',
-					'     ..00/.     ',
-					'      .100.     ',
-					'     .00/.      ',
-					'     .0/..      ',
-					'     ....       ',
-					'      ...       ',
-					'                '],
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    .221222/    ',
+				 '    .011111.    ',
+				 '    .0011j1.    ',
+				 '     .00110.    ',
+				 '     /000/.     ',
+				 '   ..001/.      ',
+				 '  ./112222/     ',
+				 '  .111/121.//   ',
+				 '  .12.0010.10.  ',
+				 '  .11.//0..01.  ',
+				 '   ../..0/...   ',
+				 '     ..00/.     ',
+				 '      .100.     ',
+				 '     .00/.      ',
+				 '     .0/..      ',
+				 '     ....       ',
+				 '      ...       ',
+				 '                '],
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    .112221/    ',
-					'    .011111/    ',
-					'    .0011j1.    ',
-					'     .00010.    ',
-					'      ./00.     ',
-					'    ./001/      ',
-					'  ..00011/      ',
-					' ./1112222///   ',
-					' ./1/./121.02/  ',
-					' .11./0010.00.  ',
-					' .11.//000...   ',
-					'  .. .///1.     ',
-					'     ../00.     ',
-					'      ../0.     ',
-					'      .//0.     ',
-					'     ../0.      ',
-					'     ....       ',
-					'      ..        ',
-					'                '],
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    .011111/    ',
+				 '    .011111.    ',
+				 '    .0011j1.    ',
+				 '     .00110.    ',
+				 '    ./000/.     ',
+				 '  ..0001/.      ',
+				 ' ./1112222///   ',
+				 ' ./1/./121.02/  ',
+				 ' .11./0010.00.  ',
+				 ' .11.//000...   ',
+				 '  .. .///1.     ',
+				 '     ../00.     ',
+				 '      ../0.     ',
+				 '      .//0.     ',
+				 '     ../0.      ',
+				 '     ....       ',
+				 '      ..        ',
+				 '                '],
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    .112221/    ',
-					'    .011111/    ',
-					'    .0011j1.    ',
-					'     .00010.    ',
-					'      ./00.     ',
-					'     /001/      ',
-					'   ..0011/      ',
-					'  ./112222/     ',
-					'  .111/121.//   ',
-					'  .12.0010.10.  ',
-					'  .11.//0..01.  ',
-					'   ../..0/...   ',
-					'     ..00/.     ',
-					'      .100.     ',
-					'     .00/.      ',
-					'     .0/..      ',
-					'     ....       ',
-					'      ...       ',
-					'                '],
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    .221222/    ',
+				 '    .011111.    ',
+				 '    .0011j1.    ',
+				 '     .00110.    ',
+				 '     /000/.     ',
+				 '   ..001/.      ',
+				 '  ./112222/     ',
+				 '  .111/121.//   ',
+				 '  .12.0010.10.  ',
+				 '  .11.//0..01.  ',
+				 '   ../..0/...   ',
+				 '     ..00/.     ',
+				 '      .100.     ',
+				 '     .00/.      ',
+				 '     .0/..      ',
+				 '     ....       ',
+				 '      ...       ',
+				 '                '],
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    .112221/    ',
-					'    .011111/    ',
-					'    .0011j1.    ',
-					'     .00010.    ',
-					'      ./00.     ',
-					'     /001/      ',
-					'    .0011/      ',
-					'   .112222/     ',
-					'  .111/121.     ',
-					'  .12/0010..    ',
-					'  .011//0./0.   ',
-					'   .00./0.//.   ',
-					'    ...0.0..    ',
-					'     .010..     ',
-					'    ./00/.      ',
-					'    .00/..      ',
-					'     ././.      ',
-					'      ....      ',
-					'                '],
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    .221222/    ',
+				 '    .011111.    ',
+				 '    .0011j1.    ',
+				 '     .00110.    ',
+				 '     /000/.     ',
+				 '    .001/.      ',
+				 '   .112222/     ',
+				 '  .111/121.     ',
+				 '  .12/0010..    ',
+				 '  .011//0./0.   ',
+				 '   .00./0.//.   ',
+				 '    ...0.0..    ',
+				 '     .010..     ',
+				 '    ./00/.      ',
+				 '    .00/..      ',
+				 '     ././.      ',
+				 '      ....      ',
+				 '                '],
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    .112221/    ',
-					'    .011111/    ',
-					'    .0011j1.    ',
-					'     .00010.    ',
-					'      ./00.     ',
-					'     /001/      ',
-					'    .0011/      ',
-					'    .12222/     ',
-					'   .11/121.     ',
-					'   .01/010.     ',
-					'   .011/0.0.    ',
-					'    .00.0./.    ',
-					'     ..0.0.     ',
-					'     .01.0.     ',
-					'     .0//.      ',
-					'    .011.0.     ',
-					'    .000./.     ',
-					'     .....      ',
-					'                '],
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    .221222/    ',
+				 '    .011111.    ',
+				 '    .0011j1.    ',
+				 '     .00110.    ',
+				 '     /000/.     ',
+				 '    .001/.      ',
+				 '    .12222/     ',
+				 '   .11/121.     ',
+				 '   .01/010.     ',
+				 '   .011/0.0.    ',
+				 '    .00.0./.    ',
+				 '     ..0.0.     ',
+				 '     .01.0.     ',
+				 '     .0//.      ',
+				 '    .011.0.     ',
+				 '    .000./.     ',
+				 '     .....      ',
+				 '                '],
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    .112221/    ',
-					'    .011111/    ',
-					'    .0011j1.    ',
-					'     .00010.    ',
-					'      ./00.     ',
-					'     /001/      ',
-					'     /011/      ',
-					'    /12222/     ',
-					'    /12/21/     ',
-					'    /12/1/.     ',
-					'    .111/..     ',
-					'     .00/..     ',
-					'     .../0.     ',
-					'    ./0/.0.     ',
-					'   ./0/./..     ',
-					'   .000..00.    ',
-					'    .0/.../.    ',
-					'     ......     ',
-					'                '],
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    .112222/    ',
+				 '    .011111.    ',
+				 '    .0011j1.    ',
+				 '     .00110.    ',
+				 '     /000/.     ',
+				 '     /01/.      ',
+				 '    /12222/     ',
+				 '    /12/21/     ',
+				 '    /12/1/.     ',
+				 '    .111/..     ',
+				 '     .00/..     ',
+				 '     .../0.     ',
+				 '    ./0/.0.     ',
+				 '   ./0/./..     ',
+				 '   .000..00.    ',
+				 '    .0/.../.    ',
+				 '     ......     ',
+				 '                '],
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    .112221/    ',
-					'    .011111/    ',
-					'    .0011j1.    ',
-					'     .00010.    ',
-					'      ./00.     ',
-					'      /01/      ',
-					'     /011/      ',
-					'    /12222/     ',
-					'    /12/.1/     ',
-					'     /120./     ',
-					'     /1111.     ',
-					'     ..00..     ',
-					'     .0..0.     ',
-					'    .101.01.    ',
-					'    .10..10.    ',
-					'   .010. .01.   ',
-					'   .00.  .00.   ',
-					'    ...   ..    ',
-					'                '],
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    .121222/    ',
+				 '    .011111.    ',
+				 '    .0011j1.    ',
+				 '     .00110.    ',
+				 '     //00/.     ',
+				 '     /01/.      ',
+				 '    /12222/     ',
+				 '    /12/.1/     ',
+				 '     /120./     ',
+				 '     /1111.     ',
+				 '     ..00..     ',
+				 '     .0..0.     ',
+				 '    .101.01.    ',
+				 '    .10..10.    ',
+				 '   .010. .01.   ',
+				 '   .00.  .00.   ',
+				 '    ...   ..    ',
+				 '                '],
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    .112221/    ',
-					'    .011111/    ',
-					'    .0011j1.    ',
-					'     .00010.    ',
-					'      ./00.     ',
-					'      /01/      ',
-					'     //11/      ',
-					'     /22/.      ',
-					'    ./200..     ',
-					'    .//2011.    ',
-					'     .0/100.    ',
-					'     .0/...     ',
-					'     .0..0..    ',
-					'    .101.010.   ',
-					'   .00//..000.  ',
-					'  .00/..  .10.  ',
-					'   ...     ..   ',
-					'                ',
-					'                '],
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    .121222/    ',
+				 '    .011111.    ',
+				 '    .0011j1.    ',
+				 '     .00110.    ',
+				 '     //00/.     ',
+				 '     //1/.      ',
+				 '     /22/.      ',
+				 '    ./200..     ',
+				 '    .//2011.    ',
+				 '     .0/100.    ',
+				 '     .0/...     ',
+				 '     .0..0..    ',
+				 '    .101.010.   ',
+				 '   .00//..000.  ',
+				 '  .00/..  .10.  ',
+				 '   ...     ..   ',
+				 '                ',
+				 '                '],
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    .112221/    ',
-					'    .011111/    ',
-					'    .0011j1.    ',
-					'     .00010.    ',
-					'      ./00.     ',
-					'      /01/      ',
-					'     /011/      ',
-					'    /12222/     ',
-					'    /12/.1/     ',
-					'     /120./     ',
-					'     /1111.     ',
-					'     ..00..     ',
-					'     .0..0.     ',
-					'    .101.01.    ',
-					'    .10..10.    ',
-					'   .010. .01.   ',
-					'   .00.  .00.   ',
-					'    ...   ..    ',
-					'                '],
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    .121222/    ',
+				 '    .011111.    ',
+				 '    .0011j1.    ',
+				 '     .00110.    ',
+				 '     //00/.     ',
+				 '     /01/.      ',
+				 '    /12222/     ',
+				 '    /12/.1/     ',
+				 '     /120./     ',
+				 '     /1111.     ',
+				 '     ..00..     ',
+				 '     .0..0.     ',
+				 '    .101.01.    ',
+				 '    .10..10.    ',
+				 '   .010. .01.   ',
+				 '   .00.  .00.   ',
+				 '    ...   ..    ',
+				 '                '],
 				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /2222/     ',
-					'    .112221/    ',
-					'    .011111/    ',
-					'    .0011j1.    ',
-					'     .00010.    ',
-					'      ./00.     ',
-					'     /001/      ',
-					'     /011/      ',
-					'    /12222/     ',
-					'    /12/21/     ',
-					'    /12/1/.     ',
-					'    .111/..     ',
-					'     .00/..     ',
-					'     .../0.     ',
-					'    ./0/.0.     ',
-					'   ./0/./..     ',
-					'   .000..00.    ',
-					'    .0/.../.    ',
-					'     ......     ',
-					'                ']], pal, armorAnimation, 'humanRight');
-			new Animation([
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'    CD    %&    ',
-					'   EFGlmno()*   ',
-					'   HIpqrstu+,   ',
-					'  J|}vwxyz{789  ',
-					'  ~€YXWVUT:;<  ',
-					'    SRQPON  =  ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'    CD    %&    ',
-					'    EFlmno(*    ',
-					'   HIpqrst)+,   ',
-					'   J|vwxyz{89   ',
-					'   ~YXWV  :<   ',
-					'    SRQP   =   ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     C    %     ',
-					'    EFlmno(&    ',
-					'    Hpqrst+)*   ',
-					'    Jvwxyz78,   ',
-					'     YXW  :;9   ',
-					'     SRQ  =<    ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     C    %     ',
-					'    EFlmno(&    ',
-					'    Hpqrst)*    ',
-					'    Jvwxyz8,    ',
-					'    ~YXW  :9    ',
-					'     SRQ  =<    ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     C    %     ',
-					'    EFlmno(&    ',
-					'    Hpqrst+)*   ',
-					'    Jvwxyz78,   ',
-					'     YXW  :;9   ',
-					'     SRQ  =<    ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'    CD    %&    ',
-					'    EFlmno(*    ',
-					'   HIpqrst)+,   ',
-					'   J|vwxyz{89   ',
-					'   ~YXWV  :<   ',
-					'    SRQP   =   ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'    CD    %&    ',
-					'   EFGlmno()*   ',
-					'   HIpqrstu+,   ',
-					'  J|}vwxyz{789  ',
-					'  ~€YXWVUT:;<  ',
-					'    SRQPON  =  ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'    CD    %&    ',
-					'    EGlmno)*    ',
-					'   HIFqrstu+,   ',
-					'   J|vwxyz{89   ',
-					'   ~€  WVUT;<   ',
-					'      QPON=    ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     D    &     ',
-					'    CGlmno)*    ',
-					'   EFIqrstu,    ',
-					'   H|}wxyz{9    ',
-					'   J€  VUT     ',
-					'    ~  PON     ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     D    &     ',
-					'    CGlmno)*    ',
-					'    EFqrstu,    ',
-					'    H|wxyz{9    ',
-					'    J€  VUT<    ',
-					'    ~  PON     ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     D    &     ',
-					'    CGlmno)*    ',
-					'   EFIqrstu,    ',
-					'   H|}wxyz{9    ',
-					'   J€  VUT     ',
-					'    ~  PON     ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'    CD    %&    ',
-					'    EGlmno)*    ',
-					'   HIFqrstu+,   ',
-					'   J|vwxyz{89   ',
-					'   ~€  WVUT;<   ',
-					'      QPON=    ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ']], pal, armorAnimation, 'shirtBasicDown');
-			new Animation([
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'    ::    ::    ',
-					'   :**::::**:   ',
-					'   :********:   ',
-					'  :**:****:**:  ',
-					'  ::::****::::  ',
-					'  :  ::::::  :  ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'    ::    ::    ',
-					'   :**::::**:   ',
-					'   :********:   ',
-					'   :*:***:*::   ',
-					'   :::***::     ',
-					'   : ::::::     ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     :    :     ',
-					'    :*::::*:    ',
-					'   :********:   ',
-					'   :*:***:**:   ',
-					'    ::***:*::   ',
-					'    :::::::     ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     :    :     ',
-					'    :*:::::     ',
-					'    :*****:     ',
-					'    ::*****:    ',
-					'    ::****::    ',
-					'     ::::::     ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     :    :     ',
-					'    :*::::*:    ',
-					'   :********:   ',
-					'   :*:***:**:   ',
-					'    ::***:*::   ',
-					'    :::::::     ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'    ::    ::    ',
-					'   :**::::**:   ',
-					'   :********:   ',
-					'   :*:***:*::   ',
-					'   :::***::     ',
-					'   : ::::::     ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'    ::    ::    ',
-					'   :**::::**:   ',
-					'   :********:   ',
-					'  :**:****:**:  ',
-					'  ::::****::::  ',
-					'  :  ::::::  :  ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'    ::    ::    ',
-					'   :**::::**:   ',
-					'   :********:   ',
-					'   ::*:***:*:   ',
-					'     ::***:::   ',
-					'     :::::: :   ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     :    :     ',
-					'    :*::::*:    ',
-					'   :********:   ',
-					'   :**:***:*:   ',
-					'   ::*:***::    ',
-					'     :::::::    ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     :    :     ',
-					'     :::::*:    ',
-					'     :*****:    ',
-					'    :*****::    ',
-					'    ::****::    ',
-					'     ::::::     ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     :    :     ',
-					'    :*::::*:    ',
-					'   :********:   ',
-					'   :**:***:*:   ',
-					'   ::*:***::    ',
-					'     :::::::    ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'    ::    ::    ',
-					'   :**::::**:   ',
-					'   :********:   ',
-					'   ::*:***:*:   ',
-					'     ::***:::   ',
-					'     :::::: :   ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ']], pal, armorAnimation, 'shirtBasicUp');
-			new Animation([
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'          „     ',
-					'      mno)*†    ',
-					'     Hrstu,‰    ',
-					'     |xyz{89‹   ',
-					'     WVUT;<   ',
-					'      QP   <“   ',
-					'           ;    ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'          „     ',
-					'      mno)*†    ',
-					'     Hrstu:,‰   ',
-					'     |xyz{{89‹  ',
-					'    €WVUTT:=  ',
-					'      QPONN;<“  ',
-					'      Q     =   ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'          „     ',
-					'      mno)*†‰   ',
-					'     Hrstu:,9‹  ',
-					'    |xyz{8;<  ',
-					'     €WVUTT  “  ',
-					'     ~QPONN     ',
-					'               ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'          „†    ',
-					'      mno()*‰‹  ',
-					'    Hrstu+:,9 ',
-					'     |xyz{{8;<“ ',
-					'     €WVUTTT  “ ',
-					'    ~    T     ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'          „     ',
-					'      mno)*†‰   ',
-					'     Hrstu:,9‹  ',
-					'    |xyz{8;<  ',
-					'     €WVUTT  “  ',
-					'     ~QPONN     ',
-					'               ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'          „     ',
-					'      mno)*†    ',
-					'     Hrstu:,‰   ',
-					'     |xyz{{89‹  ',
-					'    €WVUTT:=  ',
-					'      QPONN;<“  ',
-					'      Q     =   ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'          „     ',
-					'      mno)*†    ',
-					'     Hrstu,‰    ',
-					'     |xyz{89‹   ',
-					'     WVUT;<   ',
-					'      QP   <“   ',
-					'           =    ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'          „     ',
-					'      mno)†     ',
-					'     Hrst,*‰    ',
-					'     |xyz89‹    ',
-					'     WVU;<    ',
-					'     QP   <“    ',
-					'          =     ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'      mno)„     ',
-					'     Hrst,*†    ',
-					'     |xy8:9‰    ',
-					'     WV;<‹     ',
-					'        =<     ',
-					'         “      ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'      mno)„     ',
-					'      rst*†     ',
-					'      xy8,9‰    ',
-					'       ;;<<‹    ',
-					'       <<“     ',
-					'      ==        ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'      mno)„     ',
-					'     Hrst,*†    ',
-					'     |xy8:9‰    ',
-					'     WV;<‹     ',
-					'        =<     ',
-					'         “      ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'          „     ',
-					'      mno)†     ',
-					'     Hrst,*‰    ',
-					'     |xyz89‹    ',
-					'     WVU;<    ',
-					'     QP   <“    ',
-					'          =     ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ']], pal, armorAnimation, 'shirtBasicLeft');
-			new Animation([
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     :          ',
-					'    :*::::      ',
-					'    :*****:     ',
-					'   :**:***:     ',
-					'   :*:::**:     ',
-					'   ::   ::      ',
-					'    :           ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     :          ',
-					'    :*::::      ',
-					'   :******:     ',
-					'  :*******:     ',
-					'  :*::****::    ',
-					'  ::  ::::      ',
-					'   :     :      ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     :          ',
-					'   ::*::::      ',
-					'  :*******:     ',
-					'  :::*:***::    ',
-					'  :  :****:     ',
-					'      :::::     ',
-					'           :    ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'    ::          ',
-					'  ::**::::      ',
-					' :********::    ',
-					' :::*:****:     ',
-					' :  :::::::     ',
-					'          ::    ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     :          ',
-					'   ::*::::      ',
-					'  :*******:     ',
-					'  :::*****::    ',
-					'  :  :****:     ',
-					'      :::::     ',
-					'           :    ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     :          ',
-					'    :*::::      ',
-					'   :******:     ',
-					'  :*******:     ',
-					'  :*::****::    ',
-					'  ::  ::::      ',
-					'   :     :      ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     :          ',
-					'    :*::::      ',
-					'    :*****:     ',
-					'   :**:***:     ',
-					'   :*:::**:     ',
-					'   ::   ::      ',
-					'    :           ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     :          ',
-					'     :::::      ',
-					'    :*****:     ',
-					'    :*****:     ',
-					'    :*:::*:     ',
-					'    ::   ::     ',
-					'     :          ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     :::::      ',
-					'    :*****:     ',
-					'    :**::*:     ',
-					'     :**:::     ',
-					'     :*:        ',
-					'      :         ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     :::::      ',
-					'     :***:      ',
-					'    :****:      ',
-					'    :***:       ',
-					'     ::::       ',
-					'        ::      ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     :::::      ',
-					'    :*****:     ',
-					'    :**::*:     ',
-					'     :**:::     ',
-					'     :*:        ',
-					'      :         ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'     :          ',
-					'     :::::      ',
-					'    :*****:     ',
-					'    :*****:     ',
-					'    :*:::*:     ',
-					'    ::   ::     ',
-					'     :          ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ']], pal, armorAnimation, 'shirtBasicRight');
+				 '                ',
+				 '                ',
+				 '                ',
+				 '      ////      ',
+				 '     /2222/     ',
+				 '     /2222/     ',
+				 '    .112222/    ',
+				 '    .011111.    ',
+				 '    .0011j1.    ',
+				 '     .00110.    ',
+				 '     /000/.     ',
+				 '     /01/.      ',
+				 '    /12222/     ',
+				 '    /12/21/     ',
+				 '    /12/1/.     ',
+				 '    .111/..     ',
+				 '     .00/..     ',
+				 '     .../0.     ',
+				 '    ./0/.0.     ',
+				 '   ./0/./..     ',
+				 '   .000..00.    ',
+				 '    .0/.../.    ',
+				 '     ......     ',
+				 '                ']], pal, armorAnimation, 'humanRight');
 			new ShirtAnimation([
 				'                ',
 				'                ',
@@ -14221,9 +13472,10 @@ var programCode = function (processingInstance) {
 					'                '], pal, armorAnimation, 'breastplate of power animation');
 			new PantsAnimation('8', '9', ':', ';', pal, armorAnimation, 'orange sweats');
 			new BootsAnimation('C', 'D', 'E', pal, armorAnimation, 'green boots');
-			Player['animation']['sprite'] = new AnimationSet('humanUp', 'humanDown', 'humanLeft', 'humanRight', 'playerAnimation');
+			Player['animation']['sprite'] = new AnimationSet('humanUp', 'humanDown', 'humanLeft', 'humanRight', 'humanAnimation');
 			new GlovesAnimation('N', 'P', 'Q', pal, armorAnimation, 'purple mittens animation');
-			new BeltAnimation('m', 'o', ';', pal, armorAnimation, 'blue belt');
+			new BeltAnimation('m', 'o', ';', pal, armorAnimation, 'blue belt animation');
+			new ShortHairAnimation('„', '…', '†', '‡', pal, armorAnimation, 'short brown hair animation');
 		} // animations
 		{
 			new Enemy('slime', 'slime', 1, 4, 2, 100, 100, 1, 3, 4, 0, 4, { 'booger': 100, 'skull': 50 }, true);
@@ -14343,12 +13595,13 @@ var programCode = function (processingInstance) {
 			new Drink('booger', 'booger', 12, 12, 25);
 			new Item('skull', 'booger', 125, 75);
 			new Armor('ragged leather jerkin', 'ragged leather jerkin', 8, 3, 'chest', 'ragged leather jerkin animation', { 'armor': 6 });
-			new Armor('random helmet', 'booger', 12, 12, 'head', 'playerAnimation', { 'vigor': 10, 'armor': 10 });
+			new Armor('random helmet', 'booger', 12, 12, 'head', 'humanAnimation', { 'vigor': 10, 'armor': 10 });
 			new Armor('breastplate of power', 'ragged leather jerkin', 8, 3, 'chest', 'breastplate of power animation', { 'armor': 200, 'strength': 300 });
 			new Armor('purple mittens', 'ragged leather jerkin', 8, 3, 'hands', 'purple mittens animation', { 'armor': 10, 'vigor': 20 });
 			new Armor('orange sweats', 'booger', 12, 12, 'legs', 'orange sweats', { 'armor': 50 });
-			new Armor('blue belt', 'booger', 12, 12, 'waist', 'blue belt', { 'armor': 50 });
+			new Armor('blue belt', 'booger', 12, 12, 'waist', 'blue belt animation', { 'armor': 50 });
 			new Armor('green boots', 'booger', 12, 12, 'feet', 'green boots', { 'strength': -2 });
+			new Armor('short brown hair', 'booger', 0, 0, 'hair', 'short brown hair animation', {});
 			new BagItem('brown bag', 'brown bag', 103, 32, 8);
 		} // items
 		{
@@ -14358,7 +13611,7 @@ var programCode = function (processingInstance) {
 				'$(($(122223$$((($$$!!($$',
 				'$($$$.0000/$$$$$$!$%!$$$',
 				'$!$!!)-,+,*$!!$!!&%&&$$$',
-				'$$!!!(!!$#!!!&!!!%&!!!!(',
+				'$$!!!(!!$#!!!&!!!%&!!!!!',
 				'$$$!!&!!!!!&!%%!$$!#!!$$',
 				'$$$$!&&!(!&%!!&$$$!!!$$$',
 				'$$$$!&!$!!!$$$!!$$!&%$$$',
@@ -14372,8 +13625,28 @@ var programCode = function (processingInstance) {
 				{
 					'enemy': [
 						{ 'name': 'slime', 'x': 3, 'y': 4 }
+					],
+					'quest': [
+						{ name: 'Gerald', x: 13, y: 7 }
 					]
 				});
+			new Screen(1, 0, 0, [
+				'$$$$$$$$$$$$$$$$$$$$$$$$',
+				'$(($$(!!!$$$$$$$$$$$$$$$',
+				'$(($!(($$$($$$$(!!$$$($$',
+				'$!!$!!$$$$!$$$!!!($%$!$$',
+				'$!!!!$($!!!!!$(!!!#&&!!$',
+				'!!(!!$!!!$$$!!!!!!!$!(!(',
+				'$$!!!!!!!$($!%&%$!!!(($$',
+				'$!!$!#!!$$$!!&%!$$!!!$$(',
+				'$$!!!!!($(!!$!!($$%#&$$$',
+				'$$($!!!&$$$$!!!$$&%&!!((',
+				'$($$(!&%&$$!$!!$(%(%&$$$',
+				'$$$$!$!!%$!$$$%&#%&&%$$$',
+				'$($$$(!#!!$$($&&%&%%$$($',
+				'$$$$$$$$$!$$$$$$$$$$($($',
+				'$$$($($$$$($$$($$($$!$$$',
+				'$$$$$$$$$$($$$($$$$$$$$$']);
 			new Interior(0, 0, 0, 6, 4, 9, 8, 9, 9, [
 				'                        ',
 				'                        ',
@@ -14390,15 +13663,19 @@ var programCode = function (processingInstance) {
 				'                        ',
 				'                        ',
 				'                        ',
-				'                        ']);
+				'                        '], {
+				'interacting': [
+					{ name: 'booger', x: 13, y: 7 }
+				]
+			});
 		} // maps
 		{
 			new Ability('slash', 'damage', 'slash', 'humanUp', 20, 10, 3);
 			new Ability('lucky charms', 'buff', 'lucky charms', 'humanUp', '23', 40, 6);
 		} // abilities
 		{
-			new Npc('Gerald', 'quest', 'playerAnimation', { 'chest': 'ragged leather jerkin' });
-			new Npc('Steve', 'quest', 'playerAnimation', { 'chest': 'ragged leather jerkin' });
+			new Npc('Gerald', 'quest', 'humanAnimation', { 'chest': 'ragged leather jerkin' });
+			new Npc('Steve', 'quest', 'humanAnimation', { 'chest': 'ragged leather jerkin' });
 		} // npcs
 		{
 			new Interacting('booger', 'booger', 'trigger', 'nothing', false);
@@ -14409,8 +13686,7 @@ var programCode = function (processingInstance) {
 		} // quests
 		{
 			new Buff('23', 'booger', 'luck', 10, 6000);
-		} // buffs
-		Player['inventory']['bags']['bag1'] = {};
+		} // buffsyy
 		var loadAll = function () {
 			fill(0xFFFFFFFF);
 			textAlign(CENTER, CENTER);
@@ -14472,9 +13748,15 @@ var programCode = function (processingInstance) {
 				text('Loading Maps', 384, 272);
 				rect(100, 300, (width - 200) - (width - 200) * (load.screens.length / count.screens), 20);
 			} else {
-				items['ragged leather jerkin'].use();
-				items['orange sweats'].use();
-				items['green boots'].use();
+				if (saveFile.length > 0) {
+					Player.loadSave();
+				} else {
+					items['brown bag'].use();
+					items['orange sweats'].use();
+					items['short brown hair'].use();
+					abilities['slash'].learn();
+					abilities['lucky charms'].learn();
+				}
 				loaded = true;
 			}
 		};
@@ -14490,13 +13772,13 @@ var programCode = function (processingInstance) {
 				Player['bar'].draw(0, height - REAL_SIZE);
 				Player['healthBar'].draw(0, 0, Player['stats']['curFortitude'], Player['stats']['fortitude'], Player['stats']['curEndurance'], Player['stats']['endurance'], Player['stats']['vitality'], Player['stats']['vigor'], Player['stats']['luck'], Player['stats']['strength'], Player['stats']['armor']);
 				Player['xpBar'].draw(0, 480);
-				
+
 				noStroke();
 				colorMode(RGB);
 				fill(0, 0, 0, World.transition.value);
 				rect(0, 0, width, height);
 				colorMode(HSB);
-				
+
 				drawAlerts();
 				fill(255, 0, 0);
 				textSize(16);

@@ -7487,7 +7487,7 @@ var programCode = function (processingInstance) {
                 }
             }
         };
-        var selected = ' ';
+        var selected = '!';
         for (var y = 0; y < 16; y++) {
             map[y] = [];
             for (var x = 0; x < 24; x++) {
