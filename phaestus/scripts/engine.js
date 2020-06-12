@@ -5,12 +5,12 @@ var programCode = function (processingInstance) {
 		/*jshint sub:true*/
 
 
-		var saveFile = [[0, 0, 0, 192, 224, 192, 160, false], [11, 0, ['brown bag', 'nothing', 'nothing', 'nothing', 'nothing'], [{}, {}, {}, {}, {}], ['nothing', 'nothing', 'nothing', 'ragged leather jerkin', 'nothing', 'nothing', 'nothing', 'orange sweats', 'nothing', 'nothing', 'nothing', 'nothing', 'short brown hair'], ['slash', 'lucky charms'], ['slash', 'lucky charms', 'nothing', 'nothing', 'nothing'], {}], [100, 100, 20, 1, 100], [['stupid',], [[0, 0, 0, 6, 4, 13, 7]]]];
-		var FRAME_RATE = 60;
-		var PIXEL_SIZE = 2;
-		var TILE_SIZE = 16;
-		var REAL_SIZE = TILE_SIZE * PIXEL_SIZE;
-		var GUI_TEXT_COLOR = 'd';
+		var saveFile = [];
+		var FRAME_RATE = 60; // frame rate
+		var PIXEL_SIZE = 2; // pixel size
+		var TILE_SIZE = 16; // normal tile size
+		var REAL_SIZE = TILE_SIZE * PIXEL_SIZE; // the actual size of a tile (in pixels)
+		var GUI_TEXT_COLOR = 'd'; // the default gui color
 		var CONTROLS = {
 			up: 87,
 			down: 83,
@@ -18,30 +18,30 @@ var programCode = function (processingInstance) {
 			right: 68
 		}; // stores the key controls 
 
-		var loaded = false;
-		var collisionBoxes = false;
-		var keys = [];
-		var mouseIsPressed = false;
-		var keyIsPressed = true;
-		var newClick = true;
-		var newKey = true;
+		var loaded = false; // whether or not the assets are loaded
+		var collisionBoxes = false; // shows tile collision boxes if true
+		var keys = []; // stores the keys being pressed
+		var mouseIsPressed = false; // if mouse is being pressed
+		var keyIsPressed = true; // if a key is being pressed
+		var newClick = true; // if the player is clicking again or just holding down
+		var newKey = true; // if the player is typing again or just holding down
 
-		var items = {};
+		var items = {}; // stores all items
 		var entities = {
 			'enemy': {},
 			'vendor': {},
 			'interacting': {},
 			'quest': {}
-		};
-		var abilities = {};
-		var quests = {};
-		var alerts = {};
-		var popups = {};
-		var images = {};
-		var animations = {};
-		var buffs = {};
-		var tiles = {};
-		var World = { maps: [], interiors: [], animations: [], transition: { value: 0, change: 0 } };
+		}; // stores all entities (vendor, enemy, interacting, quest)
+		var abilities = {}; // stores all of the abilities
+		var quests = {}; // stores all of the quests
+		var alerts = {}; // stores alerts which need to be drawn
+		var popups = {}; // displays floating text which needs to be drawn
+		var images = {}; // stores all of the images
+		var animations = {}; // stores all of the animations
+		var buffs = {}; // stores the buffs
+		var tiles = {}; // stores the tiles
+		var World = { maps: [], interiors: [], animations: [], transition: { value: 0, change: 0 } }; // stores the maps
 
 		// load arrays
 		var load = {
@@ -53,8 +53,8 @@ var programCode = function (processingInstance) {
 			tiles: [],
 			guis: [],
 			npcs: []
-		};
-		var count = {};
+		}; // stores the unloaded assets
+		var count = {}; // counts how many items need to be loaded
 
 		var slots = {
 			'k': true,
@@ -66,7 +66,7 @@ var programCode = function (processingInstance) {
 			'q': true,
 			'r': true,
 			's': true
-		};
+		}; // stores which gui keys are slots
 		colorMode(HSB);
 		var pal = {
 			'!': color(0xFF0F000E), // 360 8 8
@@ -227,7 +227,7 @@ var programCode = function (processingInstance) {
 			'xp': 'R',
 			'fortitude': '*',
 			'endurance': 't'
-		};
+		}; // stores the colors for text
 
 		var Hover = function (x, y, sizeX, sizeY) {
 			if (mouseX > x && mouseX < sizeX + x && mouseY > y && mouseY < sizeY + y) {
@@ -245,15 +245,22 @@ var programCode = function (processingInstance) {
 			}
 			return (cur);
 		}; // returns the greatest number value in an array
-		var calcDamage = function (luck, strength, enemyArmor, level, enemyLevel) {
+		var calcDamage = function (luck, strength, enemyArmor, level, enemyLevel, weapon) {
+			if (weapon === undefined) {
+				weapon = 0;
+			}
 			var damage = 0;
 			damage += ((level - enemyLevel) * 2); // add or subtract damage based on the level difference
 			damage += strength * 2;
 			damage += random(0, luck * 4); // add a random crit bonus based on player's luck stat
 			damage -= enemyArmor; // subtract the players armor points from the damage
+			damage += weapon; // adds weapon damage
 			damage = round(damage); // round the damage to an integer value
+			if (damage < 0) {
+				damage = 0;
+			}
 			return damage;
-		}
+		} // calculates the damage based on 5 stats
 		frameRate(FRAME_RATE);
 
 		var testKeys = function () {
@@ -270,7 +277,7 @@ var programCode = function (processingInstance) {
 			} else {
 				return false;
 			}
-		}
+		} // returns which of the number keys (1-5) is being pressed
 
 		var Player = {
 			'loc': {
@@ -321,9 +328,10 @@ var programCode = function (processingInstance) {
 					'legs': 'nothing',
 					'waist': 'nothing',
 					'feet': 'nothing',
-					'mainHand': 'nothing',
-					'offHand': 'nothing',
-					'hair': 'nothing'
+					'mainhand': 'nothing',
+					'offhand': 'nothing',
+					'hair': 'nothing',
+					'face': 'nothing'
 				},
 				'abilities': {}, // the abilities currently available in the spellbook
 				'abilityBar': { // the abilities on the bar assigned a button value of 1-5
@@ -347,6 +355,7 @@ var programCode = function (processingInstance) {
 				'luck': 0, // critical hit chance
 				'strength': 0, // attack power
 				'armor': 0, // armor points
+				'weapon damage': 0,
 				'level': 1,
 				'xp': 0,
 				'nextLevel': 100
@@ -381,7 +390,14 @@ var programCode = function (processingInstance) {
 				},
 				'fighting': false,
 				'completedQuests': [],
-				'used': []
+				'used': [],
+				'hover': {
+					'enemy': false,
+					'quest': false,
+					'interacting': false,
+					'vendor': false
+				},
+				'cursor': 'default'
 			},
 			'buffs': {
 
@@ -405,7 +421,8 @@ var programCode = function (processingInstance) {
 					'legs': 'nothing',
 					'waist': 'nothing',
 					'feet': 'nothing',
-					'hair': 'nothing'
+					'hair': 'nothing',
+					'face': 'nothing'
 				}
 			},
 			'colBox': {
@@ -452,33 +469,34 @@ var programCode = function (processingInstance) {
 			}
 
 			var tempGuis = Object.keys(Player['actions']['guis']);
+
 			// detects if the player is in combat
 			if (Player['actions']['fighting'] !== false) {
-				Player['moveable'] = false; // makes the player imovable
+				Player['moveable'] = false; // makes the player imovable in combat
 				Player['actions']['fighting'].entity.fight(Player['actions']['fighting']); // starts entity combat
 			} else if (Player['loc']['shifting'] !== false) {
-				Player['moveable'] = false; // makes the player imovable
+				Player['moveable'] = false; // makes the player imovable while shifting screens
 			} else if (Player['actions']['guis']['quest'] !== false) {
-				Player['moveable'] = false;
-				Player['questGui'].draw(REAL_SIZE, REAL_SIZE, Player['actions']['guis']['quest']);
+				Player['moveable'] = false; // makes the player imovable while talking to a quest giver
+				Player['questGui'].draw(REAL_SIZE, REAL_SIZE, Player['actions']['guis']['quest']); // opens the quest gui
 			} else if (Player['actions']['guis']['vendor'] !== false) {
-				Player['moveable'] = false;
-				Player['vendorGui'].draw(REAL_SIZE, REAL_SIZE, Player['actions']['guis']['vendor']);
+				Player['moveable'] = false; // makes the player imovable while talking to a vendor
+				Player['vendorGui'].draw(REAL_SIZE, REAL_SIZE, Player['actions']['guis']['vendor']); // opens the vendor gui
 			} else if (Player['loc']['fade']) {
-				Player['moveable'] = false;
+				Player['moveable'] = false; // makes the player imovable during an interior or vertical transition
 			} else {
 				Player['moveable'] = true; // makes the player moveable again
 			}
 
 			if (Player['actions']['guis']['questLog']) {
 				Player['questLogGui'].draw(REAL_SIZE * 3, REAL_SIZE * 4);
-			}
+			} // draws the quest log
 			if (Player['actions']['guis']['characterPane']) {
 				Player['characterPane'].draw(REAL_SIZE * 3, REAL_SIZE * 4);
-			}
+			} // draws the character pane
 			if (Player['actions']['guis']['questDetails'] !== false) {
 				Player['questDetailsGui'].draw(REAL_SIZE, REAL_SIZE, Player['actions']['guis']['questDetails']);
-			}
+			} // draws the quest gui
 			if (Player['actions']['guis']['spellBook']) {
 				Player['spellBookGui'].draw(REAL_SIZE, REAL_SIZE);
 			}
@@ -563,6 +581,10 @@ var programCode = function (processingInstance) {
 				newKey = false;
 				println(Player.generateSave());
 			} // generates the save file when "p" is pressed
+			if (keys[79] && newKey) {
+				newKey = false;
+				collisionBoxes = !collisionBoxes;
+			} // shows collision boxes when "o" is pressed
 
 			if (Player['inventory']['silver'] >= 100) {
 				Player['inventory']['gold'] += 1;
@@ -626,6 +648,18 @@ var programCode = function (processingInstance) {
 				var p = popupKeys[i];
 				popups[p].draw();
 			}
+			if (Player['actions']['hover']['enemy']) {
+				Player['actions']['cursor'] = 'enemyCursor';
+			} else if (Player['actions']['hover']['quest']) {
+				Player['actions']['cursor'] = 'questCursor';
+			} else if (Player['actions']['hover']['vendor']) {
+				Player['actions']['cursor'] = 'vendorCursor';
+			} else if (Player['actions']['hover']['interacting']) {
+				Player['actions']['cursor'] = 'interactingCursor';
+			} else {
+				Player['actions']['cursor'] = 'defaultCursor';
+			}
+			images[Player['actions']['cursor']].draw(round(mouseX / PIXEL_SIZE) * PIXEL_SIZE, round(mouseY / PIXEL_SIZE) * PIXEL_SIZE);
 		};
 		Player.movement = function () {
 			if (Player['moveable']) {
@@ -851,9 +885,10 @@ var programCode = function (processingInstance) {
 					'\'' + Player['inventory']['equipment']['legs'] + '\'',
 					'\'' + Player['inventory']['equipment']['waist'] + '\'',
 					'\'' + Player['inventory']['equipment']['feet'] + '\'',
-					'\'' + Player['inventory']['equipment']['mainHand'] + '\'',
+					'\'' + Player['inventory']['equipment']['mainhand'] + '\'',
 					'\'' + Player['inventory']['equipment']['offHand'] + '\'',
 					'\'' + Player['inventory']['equipment']['hair'] + '\'',
+					'\'' + Player['inventory']['equipment']['face'] + '\''
 				] + ']',
 				'[' + playerAbilities + ']',
 				'[' + [
@@ -1018,6 +1053,24 @@ var programCode = function (processingInstance) {
 								}
 							}
 							this.top = this.top.get();
+						}
+						if (this.pixmap[0].length > TILE_SIZE) {
+							this.side = createGraphics(this.width, this.height, JAVA2D);
+							this.side.background(pal[' ']);
+							this.side.noStroke();
+							for (var y = 0; y < this.pixmap.length; y++) {
+								for (var x = 0; x < this.pixmap[y].length; x++) {
+									this.side.fill(pal[this.pixmap[y][x]]); // sets the color
+									var edge = [
+										(this.pixmap[0].length - TILE_SIZE) / 2,
+										this.pixmap[0].length - (this.pixmap[0].length - TILE_SIZE) / 2 - 1,
+									];
+									if (x > edge[1] || x < edge[0]) {
+										this.side.rect(x * this.size, y * this.size, this.size, this.size); // draws the pixels
+									}
+								}
+							}
+							this.side = this.side.get();
 						}
 					} else {
 						this.colorKeys = Object.keys(this.colors); // creates an array with all of the color keys
@@ -7497,9 +7550,9 @@ var programCode = function (processingInstance) {
 					'left': [[
 						'                ',
 						'                ',
+						'                ',
 						'      DDDD      ',
 						'     DEFFED     ',
-						'     DFFFFD     ',
 						'    CEEEFEDD    ',
 						'    CDCCEDED    ',
 						'    C   D DD    ',
@@ -7522,9 +7575,9 @@ var programCode = function (processingInstance) {
 					'right': [[
 						'                ',
 						'                ',
+						'                ',
 						'      DDDD      ',
 						'     DEFFED     ',
-						'     DFFFFD     ',
 						'    DDEFEEEC    ',
 						'    DEDECCDC    ',
 						'    DD D   C    ',
@@ -7574,7 +7627,146 @@ var programCode = function (processingInstance) {
 				}
 				new AnimationSet(this.name + ' up', this.name + ' down', this.name + ' left', this.name + ' right', this.name)
 			};
-
+			var ShortBeardAnimation = function (a, b, c, colors, speed, name) {
+				this.a = a;
+				this.b = b;
+				this.c = c;
+				this.colors = colors;
+				this.speed = speed;
+				this.name = name;
+				load.animations.push(this);
+			};
+			ShortBeardAnimation.prototype.load = function () {
+				var def = {
+					'up': [[
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ']],
+					'down': [[
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'    D      D    ',
+						'     D EE D     ',
+						'     CD  DC     ',
+						'      CCCC      ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ']],
+					'left': [[
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'         D      ',
+						'        ED      ',
+						'    DE ED       ',
+						'      DDD       ',
+						'     CC         ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ']],
+					'right': [[
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'      D         ',
+						'      DE        ',
+						'       DE ED    ',
+						'       DDD      ',
+						'         CC     ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ']]
+				};
+				var keys = {
+					'C': this.a,
+					'D': this.b,
+					'E': this.c,
+					' ': ' '
+				};
+				var final = {
+					'up': [],
+					'down': [],
+					'left': [],
+					'right': []
+				};
+				var dir = Object.keys(def);
+				for (var j = 0; j < dir.length; j++) {
+					for (var i = 0; i < def[dir[j]].length; i++) {
+						final[dir[j]][i] = [];
+						for (var y = 0; y < def[dir[j]][i].length; y++) {
+							final[dir[j]][i][y] = '';
+							for (var x = 0; x < def[dir[j]][i][y].length; x++) {
+								var p = def[dir[j]][i][y][x];
+								final[dir[j]][i][y] += String(keys[p]);
+							}
+						}
+					}
+					new Animation(final[dir[j]], this.colors, this.speed, this.name + ' ' + dir[j]);
+				}
+				new AnimationSet(this.name + ' up', this.name + ' down', this.name + ' left', this.name + ' right', this.name)
+			};
 		} // animation constructor
 		var textKeys = {
 			'A': 'textUpperA',
@@ -8696,7 +8888,7 @@ var programCode = function (processingInstance) {
 							if (a.type === 'damage') {
 								Player['stats']['curEndurance'] -= a.cost; // take away the player's energy
 								var damage = a.amount; // store the amount of damage the ability should do
-								damage += calcDamage(Player['stats']['luck'], Player['stats']['strength'], this.armor, Player['stats']['level'], entity.level);
+								damage += calcDamage(Player['stats']['luck'], Player['stats']['strength'], this.armor, Player['stats']['level'], entity.level, Player['stats']['weapon damage']);
 								new Popup(String(damage), GUI_TEXT_COLOR, entity.x, entity.y, 'playerDamage');
 								if (this.curFortitude - damage >= 0) {
 									this.curFortitude -= damage;
@@ -9081,7 +9273,7 @@ var programCode = function (processingInstance) {
 				delete Player['inventory']['quests'][this.name];
 				Player['actions']['completedQuests'].push(this.name);
 			};
-			var QuestGiverCheck = function (name) {
+			var QuestGiverCheck = function (name, open) {
 				var entity = entities['quest'][name];
 				if (entity.gives !== undefined) {
 					for (var i = 0; i < entity.gives.length; i++) {
@@ -9090,15 +9282,23 @@ var programCode = function (processingInstance) {
 						if (q.requires === 'nothing') {
 							if (!Player['actions']['completedQuests'].includes(q.name)) {
 								if (q.status === 'unaccepted') {
-									Player.closeGuis();
-									Player['actions']['guis']['quest'] = q.name;
+									if (open) {
+										Player.closeGuis();
+										Player['actions']['guis']['quest'] = q.name;
+									} else {
+										return 'available';
+									}
 								}
 							}
 						} else {
 							if (Player['actions']['completedQuests'].includes(q.requires)) {
 								if (q.status === 'unaccepted') {
-									Player.closeGuis();
-									Player['actions']['guis']['quest'] = q.name;
+									if (open) {
+										Player.closeGuis();
+										Player['actions']['guis']['quest'] = q.name;
+									} else {
+										return 'available';
+									}
 								}
 							}
 						}
@@ -9110,8 +9310,16 @@ var programCode = function (processingInstance) {
 						q = quests[q];
 						if (!Player['actions']['completedQuests'].includes(q.name)) {
 							if (q.status !== 'unaccepted') {
-								Player.closeGuis();
-								Player['actions']['guis']['quest'] = q.name;
+								if (open) {
+									Player.closeGuis();
+									Player['actions']['guis']['quest'] = q.name;
+								} else {
+									if (q.status === 'complete') {
+										return 'complete';
+									} else {
+										return 'incomplete'
+									}
+								}
 							}
 						}
 					}
@@ -9187,7 +9395,6 @@ var programCode = function (processingInstance) {
 				this.p.noStroke();
 				this.t.noStroke();
 				this.animations = [];
-				this.tops = [];
 				// loops through the map array
 				for (var y = 0; y < this.map.length; y++) {
 					for (var x = 0; x < this.map[y].length; x++) {
@@ -9298,7 +9505,6 @@ var programCode = function (processingInstance) {
 				this.tiles = []; // stores the tiles
 				this.storedEntities = []; // stores the entities
 				this.animations = []; // stores the animations
-				this.tops = [];
 				if (World.maps[this.x] === undefined) {
 					World.maps[this.x] = [];
 				} // creates a new x array if it is not defined
@@ -9337,6 +9543,9 @@ var programCode = function (processingInstance) {
 										if (b.image[i].height > REAL_SIZE) {
 											this.t.image(b.image[i].top, x * REAL_SIZE - b.image[i].offset.x, y * REAL_SIZE - b.image[i].offset.y);
 										}
+										if (b.image[i].width > REAL_SIZE) {
+											this.t.image(b.image[i].side, x * REAL_SIZE - b.image[i].offset.x, y * REAL_SIZE - b.image[i].offset.y);
+										}
 									} else {
 										this.animations.push({
 											tile: b.image[i],
@@ -9355,6 +9564,9 @@ var programCode = function (processingInstance) {
 									this.p.image(b.image.p, x * REAL_SIZE - b.image.offset.x, y * REAL_SIZE - b.image.offset.y);
 									if (b.image.height > REAL_SIZE) {
 										this.t.image(b.image.top, x * REAL_SIZE - b.image.offset.x, y * REAL_SIZE - b.image.offset.y);
+									}
+									if (b.image.width > REAL_SIZE) {
+										this.t.image(b.image.side, x * REAL_SIZE - b.image.offset.x, y * REAL_SIZE - b.image.offset.y);
 									}
 								} else {
 									this.animations.push({
@@ -9445,7 +9657,7 @@ var programCode = function (processingInstance) {
 				if (World.maps[x] !== undefined && Player['loc']['shifting'] === 'up') {
 					if (World.maps[x][y - 1] !== undefined) {
 						if (World.maps[x][y - 1][z] !== undefined) {
-							image(World.maps[x][y + 1][z].p, 0, Player['loc']['transition']['y'] + selMap.p.height);
+							image(World.maps[x][y - 1][z].p, 0, Player['loc']['transition']['y'] - selMap.p.height);
 							for (var i = 0; i < World.maps[x][y - 1][z].storedEntities.length; i++) {
 								var e = World.maps[x][y - 1][z].storedEntities[i];
 								if (e.alive) {
@@ -9558,6 +9770,70 @@ var programCode = function (processingInstance) {
 						}
 					}
 				}
+				for (var i = 0; i < selMap.animations.length; i++) {
+					selMap.animations[i].tile.draw(selMap.animations[i].x + Player['loc']['transition']['x'], selMap.animations[i].y + Player['loc']['transition']['y']);
+				}
+				if (collisionBoxes) {
+					strokeWeight(2);
+					noFill();
+					stroke(255, 0, 0);
+					rect(Player['colBox']['x'], Player['colBox']['y'], Player['colBox']['xSize'], Player['colBox']['ySize']);
+				}
+				for (var i = 0; i < World['animations'].length; i++) {
+					var a = World['animations'][i];
+					a.animation.draw(a.x, a.y);
+					if (a.animation.frame >= a.animation.a.length - 2) {
+						World['animations'].splice(i, 1);
+						a.animation.frame = 0;
+					}
+				}
+				World.transition.value += World.transition.change;
+				if (World.transition.value < 0) {
+					World.transition.value = 0;
+					World.transition.change = 0;
+					Player['loc']['fade'] = false;
+				}
+				if (World.transition.value > 255) {
+					World.transition.change = -World.transition.change;
+					if (World.transition.destination !== undefined) {
+						World.transition.destination();
+					}
+				}
+			};
+			World.topDraw = function (x, y, z) {
+				var selMap = World.maps[x][y][z];
+				if (Player['loc']['sub'] !== false) {
+					selMap = Player['loc']['sub'];
+				}
+				if (World.maps[x - 1] !== undefined && Player['loc']['shifting'] === 'left') {
+					if (World.maps[x - 1][y] !== undefined) {
+						if (World.maps[x - 1][y][z] !== undefined) {
+							image(World.maps[x - 1][y][z].t, Player['loc']['transition']['x'] - selMap.p.width, 0);
+						}
+					}
+				}
+				if (World.maps[x + 1] !== undefined && Player['loc']['shifting'] === 'right') {
+					if (World.maps[x + 1][y] !== undefined) {
+						if (World.maps[x + 1][y][z] !== undefined) {
+							image(World.maps[x + 1][y][z].t, Player['loc']['transition']['x'] + selMap.p.width, 0);
+						}
+					}
+				}
+				if (World.maps[x] !== undefined && Player['loc']['shifting'] === 'up') {
+					if (World.maps[x][y - 1] !== undefined) {
+						if (World.maps[x][y - 1][z] !== undefined) {
+							image(World.maps[x][y - 1][z].t, 0, Player['loc']['transition']['y'] - selMap.p.height);
+						}
+					}
+				}
+				if (World.maps[x] !== undefined && Player['loc']['shifting'] === 'down') {
+					if (World.maps[x][y + 1] !== undefined) {
+						if (World.maps[x][y + 1][z] !== undefined) {
+							image(World.maps[x][y + 1][z].t, 0, Player['loc']['transition']['y'] + selMap.p.height);
+						}
+					}
+				}
+
 				for (var i = 0; i < selMap.storedEntities.length; i++) {
 					var e = selMap.storedEntities[i];
 					stroke(255, 0, 0);
@@ -9585,12 +9861,19 @@ var programCode = function (processingInstance) {
 							}
 						}
 						if (e.type === 'quest') {
+							if (QuestGiverCheck(e.name, false) === 'available') {
+								images['exclamation point'].draw(e.x + Player['loc']['transition']['x'], e.y + Player['loc']['transition']['y'] - REAL_SIZE * 3 / 2);
+							} else if (QuestGiverCheck(e.name, false) === 'complete') {
+								images['question mark'].draw(e.x + Player['loc']['transition']['x'], e.y + Player['loc']['transition']['y'] - REAL_SIZE * 3 / 2);
+							} else if (QuestGiverCheck(e.name, false) === 'incomplete') {
+								images['gray question mark'].draw(e.x + Player['loc']['transition']['x'], e.y + Player['loc']['transition']['y'] - REAL_SIZE * 3 / 2);
+							}
 							if (Hover(e.x, e.y, REAL_SIZE, REAL_SIZE)) {
 								createAlert(e.x + REAL_SIZE, e.y, e.name + '\n', 'quest' + i);
 								if (mouseIsPressed && newClick) {
 									newClick = false;
 									if (distance < 64) {
-										QuestGiverCheck(e.name);
+										QuestGiverCheck(e.name, true);
 									} else {
 										new Popup('I need to get closer', GUI_TEXT_COLOR, Player['loc']['x'] - REAL_SIZE, Player['loc']['y'], 'questDistance');
 									}
@@ -9640,7 +9923,6 @@ var programCode = function (processingInstance) {
 																e.x / REAL_SIZE,
 																e.y / REAL_SIZE]);
 														}
-														console.log(Player['actions']['used']);
 													}
 												}
 											}
@@ -9656,70 +9938,21 @@ var programCode = function (processingInstance) {
 						}
 					}
 				}
-				for (var i = 0; i < selMap.animations.length; i++) {
-					selMap.animations[i].tile.draw(selMap.animations[i].x + Player['loc']['transition']['x'], selMap.animations[i].y + Player['loc']['transition']['y']);
-				}
-				if (collisionBoxes) {
-					strokeWeight(2);
-					noFill();
-					stroke(255, 0, 0);
-					rect(Player['colBox']['x'], Player['colBox']['y'], Player['colBox']['xSize'], Player['colBox']['ySize']);
-				}
-				for (var i = 0; i < World['animations'].length; i++) {
-					var a = World['animations'][i];
-					a.animation.draw(a.x, a.y);
-					if (a.animation.frame >= a.animation.a.length - 2) {
-						World['animations'].splice(i, 1);
-						a.animation.frame = 0;
+				for (var i = 0; i < selMap.storedEntities.length; i++) {
+					var e = selMap.storedEntities[i];
+					if (Hover(e.x, e.y, REAL_SIZE, REAL_SIZE)) {
+						if (e.alive) {
+							Player['actions']['hover'][e.type] = true;
+							break;
+						}
+					} else if (i === selMap.storedEntities.length - 1) {
+						Player['actions']['hover']['enemy'] = false;
+						Player['actions']['hover']['quest'] = false;
+						Player['actions']['hover']['vendor'] = false;
+						Player['actions']['hover']['interacting'] = false;
 					}
-				}
-				World.transition.value += World.transition.change;
-				if (World.transition.value < 0) {
-					World.transition.value = 0;
-					World.transition.change = 0;
-					Player['loc']['fade'] = false;
-				}
-				if (World.transition.value > 255) {
-					World.transition.change = -World.transition.change;
-					if (World.transition.destination !== undefined) {
-						World.transition.destination();
-					}
-				}
-			};
-			World.topDraw = function (x, y, z) {
-				var selMap = World.maps[x][y][z];
-				if (Player['loc']['sub'] !== false) {
-					selMap = Player['loc']['sub'];
 				}
 				image(selMap.t, Player['loc']['transition']['x'], Player['loc']['transition']['y']);
-				if (World.maps[x - 1] !== undefined && Player['loc']['shifting'] === 'left') {
-					if (World.maps[x - 1][y] !== undefined) {
-						if (World.maps[x - 1][y][z] !== undefined) {
-							image(World.maps[x - 1][y][z].t, Player['loc']['transition']['x'] - selMap.p.width, 0);
-						}
-					}
-				}
-				if (World.maps[x + 1] !== undefined && Player['loc']['shifting'] === 'right') {
-					if (World.maps[x + 1][y] !== undefined) {
-						if (World.maps[x + 1][y][z] !== undefined) {
-							image(World.maps[x + 1][y][z].t, Player['loc']['transition']['x'] + selMap.p.width, 0);
-						}
-					}
-				}
-				if (World.maps[x] !== undefined && Player['loc']['shifting'] === 'up') {
-					if (World.maps[x][y - 1] !== undefined) {
-						if (World.maps[x][y - 1][z] !== undefined) {
-							image(World.maps[x][y + 1][z].t, 0, Player['loc']['transition']['y'] + selMap.p.height);
-						}
-					}
-				}
-				if (World.maps[x] !== undefined && Player['loc']['shifting'] === 'down') {
-					if (World.maps[x][y + 1] !== undefined) {
-						if (World.maps[x][y + 1][z] !== undefined) {
-							image(World.maps[x][y + 1][z].t, 0, Player['loc']['transition']['y'] + selMap.p.height);
-						}
-					}
-				}
 			}
 			World.transition.run = function (type, value) {
 				Player['loc']['fade'] = true;
@@ -9742,6 +9975,44 @@ var programCode = function (processingInstance) {
 				}
 			};
 		} // map constructors
+		{
+			var Buff = function (name, image, stat, amount, duration) {
+				this.name = name;
+				this.image = image;
+				this.stat = stat;
+				this.amount = amount;
+				this.duration = duration;
+				buffs[this.name] = this;
+			};
+			Buff.prototype.give = function () {
+				Player['stats'][this.stat] += this.amount;
+				Player['buffs'][this.name] = this.duration * FRAME_RATE;
+			};
+			Buff.prototype.remove = function () {
+				Player['stats'][this.stat] -= this.amount;
+				delete Player['buffs'][this.name];
+			};
+			Buff.prototype.draw = function (x, y, buffTime) {
+				images[this.image].draw(x, y);
+				if (Hover(x, y, REAL_SIZE, REAL_SIZE)) {
+					var message = this.name + '\n';
+					if (this.stat === 'curFortitude') {
+						message += 'health';
+					} else if (this.stat === 'curEndurance') {
+						message += 'energy';
+					} else {
+						message += this.stat;
+					}
+					if (this.amount < 0) {
+						message += ' decreased\nby ';
+					} else {
+						message += ' increased\nby ';
+					}
+					message += this.amount + '\n' + floor(buffTime / FRAME_RATE) + 's remaining';
+					createAlert(x + REAL_SIZE, y, message, this.name + 'Buff');
+				}
+			};
+		} // buff constructors
 
 		/*                      _       
 		     /\                | |      
@@ -9879,6 +10150,177 @@ var programCode = function (processingInstance) {
 				' CCCCCCCCCCCCCC ',
 				'  CCCCCCCCCCCC  ',
 				'    CCCCCCCC    '], pal, 2, 'bush');
+			new Image([
+				'                ',
+				'                ',
+				'                ',
+				'                ',
+				'                ',
+				'                ',
+				'                ',
+				'                ',
+				'                ',
+				'      …………      ',
+				'     …-//-…     ',
+				'     …--/-…     ',
+				'     „…„„…„     ',
+				'     „††…†„     ',
+				'     |„……„|     ',
+				'      ||||      '], pal, 2, 'tree stump');
+			new Image([
+				'       ……       ',
+				'      …ˆ‡…      ',
+				'     …†‡ˆ†…     ',
+				'     …†‡ˆ‡…     ',
+				'    ……†‡ˆ‡……    ',
+				'   …‡…†‡ˆ†…†…   ',
+				'  ……†…†‡ˆ‡…†……  ',
+				'  …‡†…†ˆ‡†…‡……  ',
+				'  …‡†…‡‡ˆ†…†‡…  ',
+				'  …‡†…†‡ˆ‡…†‡…  ',
+				'  …†‡…‡‡ˆ†…†‡…  ',
+				'  …†‡…†ˆ‡†…††…  ',
+				'  …†‡…†ˆ‡†…‡†…  ',
+				'  …†‡…‡……‡…‡†…  ',
+				'  …††……..……‡†…  ',
+				'  …‡†…-...…††…  ',
+				'  …††…--.-„†‡…  ',
+				'  …†„„„--„„„‡…  ',
+				'  ……..…„……..„…  ',
+				'  …...-…„-...„  ',
+				'  „.-.-…„-.-.„  ',
+				'  |„--„„„…--„|  ',
+				'   |„„|||„„„|   ',
+				'    ||   |||    '], pal, 2, 'log pile');
+			new Image([
+				'                                ',
+				'                                ',
+				'                           ‡‡‡  ',
+				'                        ‡‡‡ˆ‰‡ˆ ',
+				'                     ‡‡‡ˆ‡ˆˆ‡‡ˆˆ',
+				'                  ‡‡‡ˆ‰‡ˆ‡ˆ‡ˆ‡‡ˆ',
+				'               ‡‡‡ˆ‰‰ˆˆˆ‡‡‡‡‡‡†ˆ',
+				'            ‡‡‡ˆ‡ˆˆ‡ˆ†‡‡‡‡‡†††Šˆ',
+				'           ˆˆˆ‰ˆ‡ˆ‡‡‡†‡‡†††ŠŠ‰‰ˆ',
+				'           ˆˆ‡ˆ‡‡ˆ‡‡††††Š‰Š‰‰‰‰‡',
+				'          ˆ‡‡‡‡‡‡‡†††ŠŠŠŠˆ‰‰ˆˆˆ‡',
+				'          ˆ‡‡‡‡†††ŠŠŠ‡‡‰‰ˆˆˆ‰‰‰‡',
+				'        ˆˆˆˆ†††Š‰Š‰‡‡††‡‡‰‰‰‰‡‡ ',
+				'     ˆˆˆ‡‡‡ˆŠŠ‰‰ˆ‰‡††ˆˆ††‡ˆˆ‡   ',
+				'   ˆˆ‡‡‡   ˆ‰‰‰ˆˆ‡†ˆˆ‡ˆˆ„†‡…    ',
+				' ˆˆ‡‡    ||ˆˆˆˆ‰‰‡†ˆˆ‡„……†‡|||| ',
+				'ˆ‡‡   ||ˆˆˆˆˆ‰‰‰‡†ˆ……bb‡‡…†‡||||',
+				'‡   |ˆˆˆ‡‡‡‡‡‡‡‡‡†…‡‡ba………†‡||||',
+				'  |ˆˆ‡‡‡|||||||||…†………‡……†…|||||',
+				'|ˆˆ‡‡   |||||||||…†||…‡||†…|||||',
+				'ˆ‡‡  |||||||||||||…††||††…||||||',
+				'‡  ||||||||||||||||……††……|||||| ',
+				'|||||          ||||||……|||||    ',
+				'                    ||||        '], pal, 2, 'cart');
+			{
+				new Image([
+					'      ----      ',
+					'     -.//.-     ',
+					'     -/00/-     ',
+					'     --//--     ',
+					'     -.--.-     ',
+					'     -....-     ',
+					'     -....-     ',
+					'     -.--.-     ',
+					'     ,-0/--     ',
+					'     ,-/0-,     ',
+					'     ,-/0-,     ',
+					'     ,-/0-,     ',
+					'      -/0-      ',
+					'      -0/-      ',
+					'      -0/-      ',
+					'      -0/-      '], pal, 2, 'fence side');
+				new Image([
+					'      ----      ',
+					'     -.//.-     ',
+					'     -/00/-     ',
+					'     --//--     ',
+					'------.--.------',
+					'.....-....-.....',
+					'------....------',
+					'     -.-..-     ',
+					'-----,-..-------',
+					'.....,-.--,.....',
+					',,,,,,----,,,,,,',
+					'     ,----,     ',
+					'      ,,,,      ',
+					'                ',
+					'                ',
+					'                '], pal, 2, 'fence bottom');
+				new Image([
+					'      ----      ',
+					'     -.//.-     ',
+					'     -/00/-     ',
+					'     --//--     ',
+					'     -.--.------',
+					'     -....-.....',
+					'     -....------',
+					'     -.--.-     ',
+					'     ,-0/-------',
+					'     ,-/0-,.....',
+					'     ,-/0-,,,,,,',
+					'     ,-/0-,     ',
+					'      -/0-      ',
+					'      -0/-      ',
+					'      -0/-      ',
+					'      -0/-      '], pal, 2, 'fence top left');
+				new Image([
+					'      ----      ',
+					'     -.//.-     ',
+					'     -/00/-     ',
+					'     --//--     ',
+					'------.--.-     ',
+					'.....-....-     ',
+					'------....-     ',
+					'     -.--.-     ',
+					'-------/0-,     ',
+					'.....,-0/-,     ',
+					',,,,,,-0/-,     ',
+					'     ,-0/-,     ',
+					'      -0/-      ',
+					'      -/0-      ',
+					'      -/0-      ',
+					'      -/0-      '], pal, 2, 'fence top right');
+				new Image([
+					'      ----      ',
+					'     -.//.-     ',
+					'     -/00/-     ',
+					'     --//--     ',
+					'     -.--.------',
+					'     -....-.....',
+					'     -....------',
+					'     -.-..-     ',
+					'     ,-..-------',
+					'     ,-.--,.....',
+					'     ,----,,,,,,',
+					'     ,----,     ',
+					'      ,,,,      ',
+					'                ',
+					'                ',
+					'                '], pal, 2, 'fence bottom left');
+				new Image([
+					'      ----      ',
+					'     -.//.-     ',
+					'     -/00/-     ',
+					'     --//--     ',
+					'------.--.-     ',
+					'.....-....-     ',
+					'------....-     ',
+					'     -..-.-     ',
+					'-------..-,     ',
+					'.....,--.-,     ',
+					',,,,,,----,     ',
+					'     ,----,     ',
+					'      ,,,,      ',
+					'                ',
+					'                ',
+					'                '], pal, 2, 'fence bottom right');
+			} // fence
 			{
 				new Image([
 					'+-./,...',
@@ -10141,70 +10583,21 @@ var programCode = function (processingInstance) {
 					'&&$$$$$$',
 					'&&$$$$$$',
 					'&&$$$$$$'], pal, 2, 'roof top c');
-			} // wall meta tiles
-			new MetaImage('wall corner left a', 'wall a', 'wall corner left b', 'wall b', 'wall corner left');
-			new MetaImage('wall a', 'wall corner right a', 'wall b', 'wall corner right b', 'wall corner right');
-			new MetaImage('wall a', 'wall a', 'wall b', 'wall b', 'wall center');
-			new MetaImage('wall left a', 'roof left a', 'wall left b', 'roof bottom a', 'roof bottom left corner');
-			new MetaImage('roof right a', 'wall right a', 'roof bottom b', 'wall right b', 'roof bottom right corner');
-			new MetaImage('roof middle a', 'roof middle a', 'roof middle b', 'roof middle b', 'roof bottom');
-			new MetaImage('wall left c', 'roof left b', 'wall left c', 'roof left b', 'roof left');
-			new MetaImage('roof right b', 'wall right c', 'roof right b', 'wall right c', 'roof right');
-			new MetaImage('roof middle c', 'roof middle c', 'roof middle c', 'roof middle c', 'roof middle');
-			new MetaImage('wall left d', 'wall top a', 'wall left c', 'roof top a', 'roof top left corner');
-			new MetaImage('wall top c', 'wall right d', 'roof top c', 'wall right c', 'roof top right corner');
-			new MetaImage('wall top b', 'wall top b', 'roof top b', 'roof top b', 'roof top');
-			new Image([
-				'................',
-				'.--------------.',
-				'-///11111111///-',
-				'-..//////////..-',
-				'----........----',
-				'++++jjjjjjjj++++',
-				'+,+,j#j##j#j,+,+',
-				'+,,,jj$jj$jj,,,+',
-				'+,,-jj$jj$jj-,,+',
-				'+---j#j##j#j---+',
-				'+---jjjjjjjj---+',
-				',.001111111100.,',
-				',...00000000...,',
-				'+--------------+',
-				',++++++++++++++,',
-				',,,,,,,,,,,,,,,,'], pal, 2, 'window');
-			new Image([
-				'.//////////////.',
-				'/-000000000000-/',
-				'//-0,,,,,,,,0-//',
-				'///,jjjjjjjj,///',
-				'//,jjjjjjjjjj,//',
-				'./,jjjjjjjjjj,/.',
-				'./,jjjjjjjjjj,/.',
-				'./,jjjjjjjjjj,/.',
-				',-,jjjjjjjjjj,-,',
-				'-.,jjjjjjjjjj,.-',
-				'-.,jjjjjjjjjj,.-',
-				'-.,jjjjjjjjjj,.-',
-				',-,jjjjjjjjjj,-,',
-				',-,jjjjjjjjjj,-,',
-				',-,jjjjjjjjjj,-,',
-				',,,jjjjjjjjjj,,,'], pal, 2, 'door');
-			new Image([
-				'†…………†††††………††…',
-				'ˆ…ˆ†ˆ…ˆˆˆˆˆˆˆˆˆˆ',
-				'ˆˆˆ†‡ˆ‡ˆˆˆ‡‡‡‡‡ˆ',
-				'‡…‡…‡…ˆˆ‡ˆˆˆ‡‡ˆˆ',
-				'††………††††………††††',
-				'ˆˆˆˆˆˆˆˆ…ˆ…ˆ…ˆˆˆ',
-				'‡‡‡ˆˆˆ‡ˆ‡‡†ˆ‡ˆˆ‡',
-				'‡ˆˆ‡‡ˆˆˆ…‡…‡…‡ˆˆ',
-				'………†††††……………†……',
-				'ˆ…ˆˆˆˆˆˆˆˆˆˆˆ…ˆ…',
-				'‡ˆˆ‡‡ˆˆ‡‡ˆ‡ˆˆ‡ˆ†',
-				'‡…ˆˆ‡‡ˆˆ‡ˆˆˆ‡…‡…',
-				'…†††††……††…†…………',
-				'ˆˆˆˆˆˆˆˆˆˆ…ˆ…ˆ…ˆ',
-				'ˆˆˆ‡ˆˆˆ‡‡‡ˆˆ†‡ˆ‡',
-				'ˆ‡‡ˆˆ‡‡ˆ‡ˆ…‡…‡…ˆ'], pal, 2, 'wood floor');
+			} // house meta tiles
+			{
+				new MetaImage('wall corner left a', 'wall a', 'wall corner left b', 'wall b', 'wall corner left');
+				new MetaImage('wall a', 'wall corner right a', 'wall b', 'wall corner right b', 'wall corner right');
+				new MetaImage('wall a', 'wall a', 'wall b', 'wall b', 'wall center');
+				new MetaImage('wall left a', 'roof left a', 'wall left b', 'roof bottom a', 'roof bottom left corner');
+				new MetaImage('roof right a', 'wall right a', 'roof bottom b', 'wall right b', 'roof bottom right corner');
+				new MetaImage('roof middle a', 'roof middle a', 'roof middle b', 'roof middle b', 'roof bottom');
+				new MetaImage('wall left c', 'roof left b', 'wall left c', 'roof left b', 'roof left');
+				new MetaImage('roof right b', 'wall right c', 'roof right b', 'wall right c', 'roof right');
+				new MetaImage('roof middle c', 'roof middle c', 'roof middle c', 'roof middle c', 'roof middle');
+				new MetaImage('wall left d', 'wall top a', 'wall left c', 'roof top a', 'roof top left corner');
+				new MetaImage('wall top c', 'wall right d', 'roof top c', 'wall right c', 'roof top right corner');
+				new MetaImage('wall top b', 'wall top b', 'roof top b', 'roof top b', 'roof top');
+			} // house full tiles
 			{
 				new Image([
 					'1111111111111111',
@@ -10376,58 +10769,109 @@ var programCode = function (processingInstance) {
 					'/--------------/',
 					'0000000000000000',
 					'1111111111111111'], pal, 2, 'interior window');
-			} // house interiors
-			new Image([
-				'†…………†††††………††…',
-				'ˆ…ˆ†ˆ…ˆˆˆˆˆˆˆˆˆˆ',
-				'ˆˆˆ†‡ˆ‡ˆˆˆ‡‡‡‡‡ˆ',
-				'‡…‡…‡…ˆˆ‡ˆˆˆ‡‡ˆˆ',
-				'††………††††………††††',
-				'ˆˆˆˆˆˆˆˆˆˆ‡ˆ…ˆˆˆ',
-				'‡‡‡ˆˆ‰‰‰‰‰ˆˆˆˆˆ‡',
-				'‡ˆˆ‰‰ŠŠŠŠŠ‰‰‰ˆˆˆ',
-				'…‡ˆˆ‰ŠŠŠŠŠŠ‰ˆˆ‡…',
-				'ˆˆ‰Š‹‹‹‹‹‹‹‹Š‰‰ˆ',
-				'ˆ‰Š‹‹‘‘‘‘‘‘‹‹Š‰‰',
-				'ˆ‰Š‹‘‘“““’’‘‹Š‰Š',
-				'…ˆ‰ŠŽ‘‘‘‘‘‘ŽŠ‰ˆ…',
-				'ˆ‰ŠŽ‘’’’“‘Ž‰Š‰',
-				'ˆ‰ŠŽ‘“““’‘Ž‰Š‰',
-				'ˆ‰Ž‘““““““‘ŽŠˆ'], pal, 2, 'wood floor light');
-			new Image([
-				'  ………………………………  ',
-				' …‰‰‰ˆ‰‰‰ˆ‰‰ˆ‰… ',
-				' …ˆˆ‰‰ˆˆ‰‰ˆ‰ˆˆ… ',
-				' …‡†††‡‡‡††††‡… ',
-				' …‰‰ˆ‰‰‰‰‰ˆ‰‰‰… ',
-				' …ˆˆ‰‰ˆˆˆ‰‰‰‰ˆ… ',
-				' …ˆˆˆˆˆˆˆˆˆˆˆˆ… ',
-				' …††‡††††‡‡†††… ',
-				' …‰‰‰‰ˆ‰‰‰ˆˆ‰‰… ',
-				' …ˆˆˆ‰‰ˆˆˆ‰‰‰ˆ… ',
-				' …‡‡‡‡‡‡‡‡‡‡†‡„ ',
-				' „‡††††††††††‡„ ',
-				' …„‡„„„„„„„„‡„… ',
-				' „‡†„„„„„„„„†‡„ ',
-				' „……„…„„„„…„……„ ',
-				' …„„……………………„„… '], pal, 2, 'table');
-			new Image([
-				'                ',
-				'                ',
-				'     %%%%%%     ',
-				'   %%((((((%%   ',
-				'  %&(%&&%&(((%  ',
-				'  %&&&%%%%&(&%  ',
-				' …$%&%%$$%%&%$… ',
-				' …$%%($$%$&%%$… ',
-				' „$%%%&&&&%%%$„ ',
-				' „†$$%%%%%%$$$„ ',
-				'  „……$$%%$$……„  ',
-				' …„††………………††„… ',
-				' …„……††††††……„… ',
-				' …„‡†„„„„„„†‡„… ',
-				' …„†…„„„„„„…†„… ',
-				'  …„„…„„„„…„„…  '], pal, 2, 'stool');
+				new Image([
+					'................',
+					'.--------------.',
+					'-///11111111///-',
+					'-..//////////..-',
+					'----........----',
+					'++++jjjjjjjj++++',
+					'+,+,j#j##j#j,+,+',
+					'+,,,jj$jj$jj,,,+',
+					'+,,-jj$jj$jj-,,+',
+					'+---j#j##j#j---+',
+					'+---jjjjjjjj---+',
+					',.001111111100.,',
+					',...00000000...,',
+					'+--------------+',
+					',++++++++++++++,',
+					',,,,,,,,,,,,,,,,'], pal, 2, 'window');
+				new Image([
+					'.//////////////.',
+					'/-000000000000-/',
+					'//-0,,,,,,,,0-//',
+					'///,jjjjjjjj,///',
+					'//,jjjjjjjjjj,//',
+					'./,jjjjjjjjjj,/.',
+					'./,jjjjjjjjjj,/.',
+					'./,jjjjjjjjjj,/.',
+					',-,jjjjjjjjjj,-,',
+					'-.,jjjjjjjjjj,.-',
+					'-.,jjjjjjjjjj,.-',
+					'-.,jjjjjjjjjj,.-',
+					',-,jjjjjjjjjj,-,',
+					',-,jjjjjjjjjj,-,',
+					',-,jjjjjjjjjj,-,',
+					',,,jjjjjjjjjj,,,'], pal, 2, 'door');
+				new Image([
+					'†…………†††††………††…',
+					'ˆ…ˆ†ˆ…ˆˆˆˆˆˆˆˆˆˆ',
+					'ˆˆˆ†‡ˆ‡ˆˆˆ‡‡‡‡‡ˆ',
+					'‡…‡…‡…ˆˆ‡ˆˆˆ‡‡ˆˆ',
+					'††………††††………††††',
+					'ˆˆˆˆˆˆˆˆ…ˆ…ˆ…ˆˆˆ',
+					'‡‡‡ˆˆˆ‡ˆ‡‡†ˆ‡ˆˆ‡',
+					'‡ˆˆ‡‡ˆˆˆ…‡…‡…‡ˆˆ',
+					'………†††††……………†……',
+					'ˆ…ˆˆˆˆˆˆˆˆˆˆˆ…ˆ…',
+					'‡ˆˆ‡‡ˆˆ‡‡ˆ‡ˆˆ‡ˆ†',
+					'‡…ˆˆ‡‡ˆˆ‡ˆˆˆ‡…‡…',
+					'…†††††……††…†…………',
+					'ˆˆˆˆˆˆˆˆˆˆ…ˆ…ˆ…ˆ',
+					'ˆˆˆ‡ˆˆˆ‡‡‡ˆˆ†‡ˆ‡',
+					'ˆ‡‡ˆˆ‡‡ˆ‡ˆ…‡…‡…ˆ'], pal, 2, 'wood floor');
+				new Image([
+					'†…………†††††………††…',
+					'ˆ…ˆ†ˆ…ˆˆˆˆˆˆˆˆˆˆ',
+					'ˆˆˆ†‡ˆ‡ˆˆˆ‡‡‡‡‡ˆ',
+					'‡…‡…‡…ˆˆ‡ˆˆˆ‡‡ˆˆ',
+					'††………††††………††††',
+					'ˆˆˆˆˆˆˆˆˆˆ‡ˆ…ˆˆˆ',
+					'‡‡‡ˆˆ‰‰‰‰‰ˆˆˆˆˆ‡',
+					'‡ˆˆ‰‰ŠŠŠŠŠ‰‰‰ˆˆˆ',
+					'…‡ˆˆ‰ŠŠŠŠŠŠ‰ˆˆ‡…',
+					'ˆˆ‰Š‹‹‹‹‹‹‹‹Š‰‰ˆ',
+					'ˆ‰Š‹‹‘‘‘‘‘‘‹‹Š‰‰',
+					'ˆ‰Š‹‘‘“““’’‘‹Š‰Š',
+					'…ˆ‰ŠŽ‘‘‘‘‘‘ŽŠ‰ˆ…',
+					'ˆ‰ŠŽ‘’’’“‘Ž‰Š‰',
+					'ˆ‰ŠŽ‘“““’‘Ž‰Š‰',
+					'ˆ‰Ž‘““““““‘ŽŠˆ'], pal, 2, 'wood floor light');
+				new Image([
+					'  ………………………………  ',
+					' …‰‰‰ˆ‰‰‰ˆ‰‰ˆ‰… ',
+					' …ˆˆ‰‰ˆˆ‰‰ˆ‰ˆˆ… ',
+					' …‡†††‡‡‡††††‡… ',
+					' …‰‰ˆ‰‰‰‰‰ˆ‰‰‰… ',
+					' …ˆˆ‰‰ˆˆˆ‰‰‰‰ˆ… ',
+					' …ˆˆˆˆˆˆˆˆˆˆˆˆ… ',
+					' …††‡††††‡‡†††… ',
+					' …‰‰‰‰ˆ‰‰‰ˆˆ‰‰… ',
+					' …ˆˆˆ‰‰ˆˆˆ‰‰‰ˆ… ',
+					' …‡‡‡‡‡‡‡‡‡‡†‡„ ',
+					' „‡††††††††††‡„ ',
+					' …„‡„„„„„„„„‡„… ',
+					' „‡†„„„„„„„„†‡„ ',
+					' „……„…„„„„…„……„ ',
+					' …„„……………………„„… '], pal, 2, 'table');
+				new Image([
+					'                ',
+					'                ',
+					'     %%%%%%     ',
+					'   %%((((((%%   ',
+					'  %&(%&&%&(((%  ',
+					'  %&&&%%%%&(&%  ',
+					' …$%&%%$$%%&%$… ',
+					' …$%%($$%$&%%$… ',
+					' „$%%%&&&&%%%$„ ',
+					' „†$$%%%%%%$$$„ ',
+					'  „……$$%%$$……„  ',
+					' …„††………………††„… ',
+					' …„……††††††……„… ',
+					' …„‡†„„„„„„†‡„… ',
+					' …„†…„„„„„„…†„… ',
+					'  …„„…„„„„…„„…  '], pal, 2, 'stool');
+			} // house interior
 		} // block images
 		{
 			new Tile('grass', 'walkable', '!');
@@ -10465,40 +10909,15 @@ var programCode = function (processingInstance) {
 			new Tile('interior window', 'solid', 'B');
 			new Tile(['wood floor', 'table'], 'solid', 'C');
 			new Tile(['wood floor', 'stool'], 'solid', 'D');
-		} // block tiles
-		{
-			new Tile('grass', 'walkable', '!');
-			new Tile(['grass', 'rock'], 'solid', '#');
-			new Tile('void', 'solid', ' ');
-			new Tile(['grass', 'treeA'], 'solid', '$');
-			new Tile(['grass', 'purple flower a'], 'walkable', '%');
-			new Tile(['grass', 'purple flower b'], 'walkable', '&');
-			new Tile(['grass', 'bush'], 'solid', '(');
-			new Tile(['grass', 'wall corner left'], 'solid', ')');
-			new Tile('wall center', 'solid', '+');
-			new Tile(['grass', 'wall corner right'], 'solid', '*');
-			new Tile('window', 'solid', ',');
-			new Tile('door', 'solid', '-');
-			new Tile('roof bottom left corner', 'solid', '.');
-			new Tile('roof bottom right corner', 'solid', '/');
-			new Tile('roof bottom', 'solid', '0');
-			new Tile('roof left', 'solid', '1');
-			new Tile('roof middle', 'solid', '2');
-			new Tile('roof right', 'solid', '3');
-			new Tile(['grass', 'roof top left corner'], 'solid', '4');
-			new Tile('roof top', 'solid', '5');
-			new Tile(['grass', 'roof top right corner'], 'solid', '6');
-			new Tile('wood floor', 'walkable', '7');
-			new Tile('interior wall top', 'solid', '8');
-			new Tile('interior wall bottom', 'solid', '9');
-			new Tile('interior wall left', 'solid', ':');
-			new Tile('interior wall right', 'solid', ';');
-			new Tile('interior wall top left corner', 'solid', '<');
-			new Tile('interior wall top right corner', 'solid', '=');
-			new Tile('interior wall bottom left corner', 'solid', '>');
-			new Tile('interior wall bottom right corner', 'solid', '?');
-			new Tile('interior door', 'solid', '@');
-			new Tile('wood floor light', 'walkable', 'A');
+			new Tile(['grass', 'tree stump'], 'solid', 'E');
+			new Tile(['grass', 'log pile'], 'solid', 'F');
+			new Tile(['grass', 'cart'], 'solid', 'G');
+			new Tile(['grass', 'fence side'], 'solid', 'H');
+			new Tile(['grass', 'fence top right'], 'solid', 'I');
+			new Tile(['grass', 'fence top left'], 'solid', 'J');
+			new Tile(['grass', 'fence bottom'], 'solid', 'K');
+			new Tile(['grass', 'fence bottom left'], 'solid', 'L');
+			new Tile(['grass', 'fence bottom right'], 'solid', 'M');
 		} // block tiles
 		{
 			new Image([
@@ -11283,6 +11702,142 @@ var programCode = function (processingInstance) {
 				'                ',
 				'                ',
 				'                '], pal, 2, 'silver');
+			new Image([
+				'                ',
+				'                ',
+				'       <<       ',
+				'      <==<      ',
+				'      <==<      ',
+				'      <==<      ',
+				'      <==<      ',
+				'      <==<      ',
+				'      <==<      ',
+				'      ;<<;      ',
+				'       ;;       ',
+				'      <==<      ',
+				'      ;<<;      ',
+				'       ;;       ',
+				'                ',
+				'                '], pal, 2, 'exclamation point');
+			new Image([
+				'                ',
+				'      <<<<      ',
+				'     <====<     ',
+				'    <=<;;<=<    ',
+				'    ;<;  ;=<    ',
+				'     ;   ;=<    ',
+				'        <==<    ',
+				'       <==;     ',
+				'      <==;      ',
+				'      ;<<;      ',
+				'       ;;       ',
+				'      <==<      ',
+				'      ;<<;      ',
+				'       ;;       ',
+				'                ',
+				'                '], pal, 2, 'question mark');
+			new Image([
+				'                ',
+				'      eeee      ',
+				'     effffe     ',
+				'    efeddefe    ',
+				'    ded  dfe    ',
+				'     d   dfe    ',
+				'        effe    ',
+				'       effd     ',
+				'      effd      ',
+				'      deed      ',
+				'       dd       ',
+				'      effe      ',
+				'      deed      ',
+				'       dd       ',
+				'                ',
+				'                '], pal, 2, 'gray question mark');
+			new Image([
+				'aaa             ',
+				'`beaa           ',
+				'`cbeeaa         ',
+				' `cbcecaa       ',
+				' `bcbceeea      ',
+				'  `ccbcecea     ',
+				'  `bccbceeea    ',
+				'   `cbcbceca    ',
+				'   `bcccbaa     ',
+				'    `bcc`ca     ',
+				'     `bb``ca    ',
+				'      ``  ``    ',
+				'                ',
+				'                ',
+				'                ',
+				'                '], pal, 2, 'defaultCursor');
+			new Image([
+				'  ;;            ',
+				' ;<<;   ...     ',
+				' ;<<;  ./---    ',
+				' ;<<; ./-//-    ',
+				' ;<<;))-//-     ',
+				' ;<<:/()/-      ',
+				' ;<<:-/(-       ',
+				'-:<<:-/(        ',
+				'--::-,- ()      ',
+				',:<<:,    (     ',
+				' ;<<;           ',
+				'  ;;            ',
+				'                ',
+				'                ',
+				'                ',
+				'                '], pal, 2, 'questCursor');
+			new Image([
+				'bbb             ',
+				'aeeb            ',
+				'adeeb           ',
+				' adeeb          ',
+				'  adceb         ',
+				'   adceb :      ',
+				'    adce:9      ',
+				'     adc:9      ',
+				'      ::94      ',
+				'     :99454     ',
+				'         459    ',
+				'          9:    ',
+				'                ',
+				'                ',
+				'                ',
+				'                '], pal, 2, 'enemyCursor');
+			new Image([
+				'  aaa           ',
+				'  aefaa         ',
+				'   afafa        ',
+				'   aeafaa       ',
+				'  aadaeaea      ',
+				' `eaccdafa      ',
+				' `ffeeccda      ',
+				'  ``eefec`      ',
+				'   `cddd`       ',
+				'  `eeccb`       ',
+				'  `deed`        ',
+				'   aaaa         ',
+				'                ',
+				'                ',
+				'                ',
+				'                '], pal, 2, 'interactingCursor');
+			new Image([
+				'      †††       ',
+				'    ††‡‡‡††     ',
+				'   †‡‡‡†‡†‡†    ',
+				'   ‡‡‡†‡†‡†…    ',
+				'  †Š‰†††‡††…    ',
+				' †…††ˆˆ‡†…†…    ',
+				'  ;;…†…‰…†…     ',
+				' ;<=;†…ˆ……      ',
+				';=;<;…… Š       ',
+				' ;:;<;…… ‰Š     ',
+				'::;::;:    Š    ',
+				'  :: :          ',
+				'                ',
+				'                ',
+				'                ',
+				'                '], pal, 2, 'vendorCursor');
 		} // gui tile images
 		{
 			new Image([
@@ -12079,6 +12634,26 @@ var programCode = function (processingInstance) {
 					'                ']], pal, 1, 'slime');
 		} // enemy images
 		{
+			/*
+			[
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '
+			]
+			*/
 			new Image([
 				'                ',
 				'                ',
@@ -12117,40 +12692,6 @@ var programCode = function (processingInstance) {
 				'                ',
 				'                ',
 				'  [[[[[[[[[[[[  ',
-				'  [[[[[[[[[hg[  ',
-				'  [[[[[[[[hgd[  ',
-				'  [[[{{{zxgd[[  ',
-				'  [[{{‚-*gdx[[  ',
-				'  [[{J/0/d,y[[  ',
-				'  [[z{-*-U{z[[  ',
-				'  [[yz{{{{zy[[  ',
-				'  [[[yyzzyy[[[  ',
-				'  [[[[xyyx[[[[  ',
-				'  [[[[[[[[[[[[  ',
-				'  [[[[[[[[[[[[  ',
-				'                ',
-				'                '], pal, 2, 'lucky charms');
-			new Image([
-				'                ',
-				'                ',
-				'  aaaaaaaaaaaa  ',
-				'  aaaaaaaaaaaa  ',
-				'  aaaaaaaaaaaa  ',
-				'  aaaaabccaaaa  ',
-				'  aaaacccbbaaa  ',
-				'  aaacccbcbaaa  ',
-				'  aaaccbcbbaaa  ',
-				'  aaaabcbaaaaa  ',
-				'  aaaaabaaaaaa  ',
-				'  aaaaaaaaaaaa  ',
-				'  aaaaaaaaaaaa  ',
-				'  aaaaaaaaaaaa  ',
-				'                ',
-				'                '], pal, 2, 'booger');
-			new Image([
-				'                ',
-				'                ',
-				'  [[[[[[[[[[[[  ',
 				'  [[chhhg[[[[[  ',
 				'  [cbhhgffd[[[  ',
 				'  [cb[[[[ddd[[  ',
@@ -12164,1318 +12705,1394 @@ var programCode = function (processingInstance) {
 				'  [[[[[[[[[[[[  ',
 				'                ',
 				'                '], pal, 2, 'slash');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[‡‡‡‡[[[[[[  ',
+				'  [[‡†ŠŠŠŠ[[[[  ',
+				'  [[[‡ˆ‰ŠŠ[[[[  ',
+				'  [[[‡†ˆ‰ŠŠ[[[  ',
+				'  [[[[‡‡‡ŠŠ[[[  ',
+				'  [[[[‡†‰‰Š[[[  ',
+				'  [[‡‡††‡‡‰[[[  ',
+				'  [[‡‡ŠŠ‰‰ˆ[[[  ',
+				'  [[[[‰ˆˆ‡‡[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'brown boots');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[222222[[[  ',
+				'  [[[2/00/2[[[  ',
+				'  [[[2/../2[[[  ',
+				'  [[[2.-..0[[[  ',
+				'  [[[0.,-.0[[[  ',
+				'  [[[0/,,/2[[[  ',
+				'  [[[0/[[/0[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'canvas pants');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[5[[  ',
+				'  [[[[[[[[54[[  ',
+				'  [[[[[[[54[[[  ',
+				'  [[[[[[gh[[[[  ',
+				'  [[[[[ghf[[[[  ',
+				'  [[[[ghf[[[[[  ',
+				'  [[[ghf[[[[[[  ',
+				'  [[f[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'bread knife');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[&8[[8&[[[  ',
+				'  [[&%8&&8%&[[  ',
+				'  [[88988988[[  ',
+				'  [[&%8%%8%&[[  ',
+				'  [[8[9889[8[[  ',
+				'  [[%[8%%8[%[[  ',
+				'  [[[[8%[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'lumberjack flannel');
 		} // item images
 		{
 			var armorAnimation = 0.45;
-			new Animation([
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1111/.    ',
-					'    ./0000/.    ',
-					'     .0000.     ',
-					'     ./00/.     ',
-					'    /1/00/1/    ',
-					'   /11100111/   ',
-					'   /1/1111/1/   ',
-					'  /10.0110.01/  ',
-					'  /10./00/.01/  ',
-					'  /1/./11/./1/  ',
-					'  .00/1111/00.  ',
-					'   ../1001/..   ',
-					'     .1001.     ',
-					'     .0000.     ',
-					'    /10//01/    ',
-					'    .00..00.    ',
-					'     ..  ..     ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1111/.    ',
-					'    ./0000/.    ',
-					'     .0000.     ',
-					'     ./00/.     ',
-					'    /1/00/1/    ',
-					'   /11100111/   ',
-					'   /1/1111/1/   ',
-					'   .0.011/00/   ',
-					'   .0./00./00/  ',
-					'   ././11/./1/  ',
-					'    ./1111/..   ',
-					'     /1000/     ',
-					'     .100/.     ',
-					'     .00/00/    ',
-					'    /10/.//.    ',
-					'    .00....     ',
-					'     ..         ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1111/.    ',
-					'    ./0000/.    ',
-					'     .0000.     ',
-					'     ./00/.     ',
-					'     //00./     ',
-					'    /110011/    ',
-					'   /1/1111/1/   ',
-					'   .0.011/00/   ',
-					'    ../00./0/   ',
-					'    ../11/.01/  ',
-					'     /1111.01/  ',
-					'     /1000/..   ',
-					'     .100/0/    ',
-					'     .00.00.    ',
-					'    /10/...     ',
-					'    .00.        ',
-					'     ..         ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1111/.    ',
-					'    ./0000/.    ',
-					'     .0000.     ',
-					'     ./00/.     ',
-					'     /.00./     ',
-					'    /11001/     ',
-					'    //1111/     ',
-					'    /.011/0/    ',
-					'    ../00.//    ',
-					'     ./11.00/   ',
-					'     /1111.0/   ',
-					'     /100//..   ',
-					'     .10/.0/    ',
-					'     .00....    ',
-					'    /10.        ',
-					'    .00.        ',
-					'     ..         ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1111/.    ',
-					'    ./0000/.    ',
-					'     .0000.     ',
-					'     ./00/.     ',
-					'     //00./     ',
-					'    /110011/    ',
-					'   /1/1111/1/   ',
-					'   .0.011/00/   ',
-					'    ../00./0/   ',
-					'    ../11/.01/  ',
-					'     /1111.01/  ',
-					'     /1000/..   ',
-					'     .100/0/    ',
-					'     .00.00.    ',
-					'    /10/...     ',
-					'    .00.        ',
-					'     ..         ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1111/.    ',
-					'    ./0000/.    ',
-					'     .0000.     ',
-					'     ./00/.     ',
-					'    /1/00/1/    ',
-					'   /11100111/   ',
-					'   /1/1111/1/   ',
-					'   .0.011/00/   ',
-					'   .0./00./00/  ',
-					'   ././11/./1/  ',
-					'    ./1111/..   ',
-					'     /1000/     ',
-					'     .100/.     ',
-					'     .00/00/    ',
-					'    /10/.//.    ',
-					'    .00....     ',
-					'     ..         ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1111/.    ',
-					'    ./0000/.    ',
-					'     .0000.     ',
-					'     ./00/.     ',
-					'    /1/00/1/    ',
-					'   /11100111/   ',
-					'   /1/1111/1/   ',
-					'  /10.0110.01/  ',
-					'  /10./00/.01/  ',
-					'  /1/./11/./1/  ',
-					'  .00/1111/00.  ',
-					'   ../1001/..   ',
-					'     .1001.     ',
-					'     .0000.     ',
-					'    /10//01/    ',
-					'    .00..00.    ',
-					'     ..  ..     ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1111/.    ',
-					'    ./0000/.    ',
-					'     .0000.     ',
-					'     ./00/.     ',
-					'    /1/00/1/    ',
-					'   /11100111/   ',
-					'   /1/1111/1/   ',
-					'   /00/110.0.   ',
-					'  /00/.00/.0.   ',
-					'  /1/./11/./.   ',
-					'   ../1111/.    ',
-					'     /0001/     ',
-					'     ./001.     ',
-					'    /00/00.     ',
-					'    .//./01/    ',
-					'     ....00.    ',
-					'         ..     ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1111/.    ',
-					'    ./0000/.    ',
-					'     .0000.     ',
-					'     ./00/.     ',
-					'     /.00//     ',
-					'    /110011/    ',
-					'   /1/1111/1/   ',
-					'   /00/110.0.   ',
-					'   /0/.00/..    ',
-					'  /10./11/..    ',
-					'  /10.1111/     ',
-					'   ../0001/     ',
-					'    /0/001.     ',
-					'    .00.00.     ',
-					'     .../01/    ',
-					'        .00.    ',
-					'         ..     ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1111/.    ',
-					'    ./0000/.    ',
-					'     .0000.     ',
-					'     ./00/.     ',
-					'     /.00./     ',
-					'     /10011/    ',
-					'     /1111//    ',
-					'    /0/110./    ',
-					'    //.00/..    ',
-					'   /00.11/.     ',
-					'   /0.1111/     ',
-					'   ..//001/     ',
-					'    /0./01.     ',
-					'    ....00.     ',
-					'        .01/    ',
-					'        .00.    ',
-					'         ..     ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1111/.    ',
-					'    ./0000/.    ',
-					'     .0000.     ',
-					'     ./00/.     ',
-					'     /.00//     ',
-					'    /110011/    ',
-					'   /1/1111/1/   ',
-					'   /00/110.0.   ',
-					'   /0/.00/..    ',
-					'  /10./11/..    ',
-					'  /10.1111/     ',
-					'   ../0001/     ',
-					'    /0/001.     ',
-					'    .00.00.     ',
-					'     .../01/    ',
-					'        .00.    ',
-					'         ..     ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1111/.    ',
-					'    ./0000/.    ',
-					'     .0000.     ',
-					'     ./00/.     ',
-					'    /1/00/1/    ',
-					'   /11100111/   ',
-					'   /1/1111/1/   ',
-					'   /00/110.0.   ',
-					'  /00/.00/.0.   ',
-					'  /1/./11/./.   ',
-					'   ../1111/.    ',
-					'     /0001/     ',
-					'     ./001.     ',
-					'    /00/00.     ',
-					'    .//./01/    ',
-					'     ....00.    ',
-					'         ..     ',
-					'                ']], pal, armorAnimation, 'humanUp');
-			new Animation([
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1001/.    ',
-					'    ./0000/.    ',
-					'     .j//j.     ',
-					'     .0000.     ',
-					'    /1.//.1/    ',
-					'   /10000001/   ',
-					'   /1/1111/1/   ',
-					'  /10.0110.01/  ',
-					'  /10./110.01/  ',
-					'  /1/./00/./1/  ',
-					'  .00/1111/00.  ',
-					'   ../1001/..   ',
-					'     .1001.     ',
-					'     .0000.     ',
-					'    /11//11/    ',
-					'    .00..00.    ',
-					'     ..  ..     ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1001/.    ',
-					'    ./0000/.    ',
-					'     .j//j.     ',
-					'     .0000.     ',
-					'    0/.//./0    ',
-					'    /000001/    ',
-					'   /1/1111/1/   ',
-					'   .0.0110.0/   ',
-					'   .0./11010/   ',
-					'  /.0./11/11.   ',
-					'  .0./1111..    ',
-					'   .//1001.     ',
-					'    .10001.     ',
-					'    .11000.     ',
-					'    .00./11/    ',
-					'     .. .00.    ',
-					'         ..     ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1001/.    ',
-					'    ./0000/.    ',
-					'     .j//j.     ',
-					'     .0000.     ',
-					'     /.//./     ',
-					'    0.00001/    ',
-					'    ./1111/1.   ',
-					'    ..0111/0.   ',
-					'   /../10/10.   ',
-					'   .0./1/10.    ',
-					'    ./111..     ',
-					'    .10001.     ',
-					'    .11001.     ',
-					'    .00.00.     ',
-					'     .. /11/    ',
-					'        .00.    ',
-					'         ..     ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1001/.    ',
-					'    ./0000/.    ',
-					'     .j//j.     ',
-					'     .0000.     ',
-					'     /.//./     ',
-					'    0.0000.0    ',
-					'    ./111.1.    ',
-					'    ..01100.    ',
-					'    ../1011.    ',
-					'     ./100..    ',
-					'     .111..     ',
-					'    .11001.     ',
-					'    .00.01.     ',
-					'     ...00.     ',
-					'        /11/    ',
-					'        .00.    ',
-					'         ..     ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1001/.    ',
-					'    ./0000/.    ',
-					'     .j//j.     ',
-					'     .0000.     ',
-					'     /.//./     ',
-					'    0.00001/    ',
-					'    ./1111/1.   ',
-					'    ..0111/0.   ',
-					'   /../10/10.   ',
-					'   .0./1/10.    ',
-					'    ./111..     ',
-					'    .10001.     ',
-					'    .11001.     ',
-					'    .00.00.     ',
-					'     .. /11/    ',
-					'        .00.    ',
-					'         ..     ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1001/.    ',
-					'    ./0000/.    ',
-					'     .j//j.     ',
-					'     .0000.     ',
-					'    0/.//./0    ',
-					'    /000001/    ',
-					'   /1/1111/1/   ',
-					'   .0.0110.0/   ',
-					'   .0./11010/   ',
-					'  /.0./11/11.   ',
-					'  .0./1111..    ',
-					'   .//1001.     ',
-					'    .11001.     ',
-					'    .10000.     ',
-					'    .00./11/    ',
-					'     .. .00.    ',
-					'         ..     ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1001/.    ',
-					'    ./0000/.    ',
-					'     .j//j.     ',
-					'     .0000.     ',
-					'    /1.//.1/    ',
-					'   /10000001/   ',
-					'   /1/1111/1/   ',
-					'  /10.0110.01/  ',
-					'  /10./110.01/  ',
-					'  /1/./11/./1/  ',
-					'  .00/1111/00.  ',
-					'   ../1001/..   ',
-					'     .1001.     ',
-					'     .0000.     ',
-					'    /11//11/    ',
-					'    .00..00.    ',
-					'     ..  ..     ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1001/.    ',
-					'    ./0000/.    ',
-					'     .j//j.     ',
-					'     .0000.     ',
-					'    0/.//./0    ',
-					'    /100000/    ',
-					'   /1/1111/1/   ',
-					'   /0.0110.0.   ',
-					'   /01011/.0.   ',
-					'   .11/11/.0./  ',
-					'    ..1111/.0.  ',
-					'     .1001//.   ',
-					'     .10001.    ',
-					'     .00011.    ',
-					'    /11/.00.    ',
-					'    .00. ..     ',
-					'     ..         ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1001/.    ',
-					'    ./0000/.    ',
-					'     .j//j.     ',
-					'     .0000.     ',
-					'     /.//./     ',
-					'    /10000.0    ',
-					'   .1/1111/.    ',
-					'   .0/1110..    ',
-					'   .01/01/../   ',
-					'    .01/1/.0.   ',
-					'     ..111/.    ',
-					'     .10001.    ',
-					'     .10011.    ',
-					'     .00.00.    ',
-					'    /11/ ..     ',
-					'    .00.        ',
-					'     ..         ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1001/.    ',
-					'    ./0000/.    ',
-					'     .j//j.     ',
-					'     .0000.     ',
-					'     /.//./     ',
-					'    0.0000.0    ',
-					'    .1.111/.    ',
-					'    .00110..    ',
-					'    .1101/..    ',
-					'    ..001/.     ',
-					'     ..111.     ',
-					'     .10011.    ',
-					'     .10.00.    ',
-					'     .00...     ',
-					'    /11/        ',
-					'    .00.        ',
-					'     ..         ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1001/.    ',
-					'    ./0000/.    ',
-					'     .j//j.     ',
-					'     .0000.     ',
-					'     /.//./     ',
-					'    /10000.0    ',
-					'   .1/1111/.    ',
-					'   .0/1110..    ',
-					'   .01/01/../   ',
-					'    .01/1/.0.   ',
-					'     ..111/.    ',
-					'     .10001.    ',
-					'     .10011.    ',
-					'     .00.00.    ',
-					'    /11/ ..     ',
-					'    .00.        ',
-					'     ..         ',
-					'                '],
-				[
-					'                ',
-					'                ',
-					'      ////      ',
-					'     /1221/     ',
-					'     /1111/     ',
-					'    /111111/    ',
-					'    ./1001/.    ',
-					'    ./0000/.    ',
-					'     .j//j.     ',
-					'     .0000.     ',
-					'    0/.//./0    ',
-					'    /100000/    ',
-					'   /1/1111/1/   ',
-					'   /0.0110.0.   ',
-					'   /01011/.0.   ',
-					'   .11/11/.0./  ',
-					'    ..1111/.0.  ',
-					'     .1001//.   ',
-					'     .10001.    ',
-					'     .00011.    ',
-					'    /11/.00.    ',
-					'    .00. ..     ',
-					'     ..         ',
-					'                ']], pal, armorAnimation, 'humanDown');
-			new Animation([
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    /222122.    ',
-				 '    .111110.    ',
-				 '    .1j1100.    ',
-				 '    .01100.     ',
-				 '     ./000/     ',
-				 '      ./100.    ',
-				 '     /22221.    ',
-				 '     .121/11.   ',
-				 '     .010/10.   ',
-				 '    .0.0/110.   ',
-				 '    ./.0.00.    ',
-				 '     .0.0..     ',
-				 '     .0.10.     ',
-				 '      .//0.     ',
-				 '     .0.110.    ',
-				 '     ./.000.    ',
-				 '      .....     ',
-				 '                '],
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    /222122.    ',
-				 '    .111110.    ',
-				 '    .1j1100.    ',
-				 '    .01100.     ',
-				 '     ./000/     ',
-				 '      ./100.    ',
-				 '     /222211.   ',
-				 '     .121/111.  ',
-				 '    ..0100/21.  ',
-				 '   .0/.0//110.  ',
-				 '   .//.0/.00.   ',
-				 '    ..0.0...    ',
-				 '     ..010.     ',
-				 '      ./00/.    ',
-				 '      ../00.    ',
-				 '      ././.     ',
-				 '      ....      ',
-				 '                '],
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    /222122.    ',
-				 '    .111110.    ',
-				 '    .1j1100.    ',
-				 '    .01100.     ',
-				 '     ./000/     ',
-				 '      ./100..   ',
-				 '     /222211/.  ',
-				 '   //.121/111.  ',
-				 '  .01.0100.21.  ',
-				 '  .10..0//.11.  ',
-				 '   .../0../..   ',
-				 '     ./00..     ',
-				 '     .001.      ',
-				 '      ./00.     ',
-				 '      ../0.     ',
-				 '       ....     ',
-				 '       ...      ',
-				 '                '],
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    /111110.    ',
-				 '    .111110.    ',
-				 '    .1j1100.    ',
-				 '    .01100.     ',
-				 '     ./000/.    ',
-				 '      ./1000..  ',
-				 '   ///2222111/. ',
-				 '  /20.121/./1/. ',
-				 '  .00.0100/.11. ',
-				 '   ...000//.11. ',
-				 '     .1///. ..  ',
-				 '     .00/..     ',
-				 '     .0/..      ',
-				 '     .0//.      ',
-				 '      .0/..     ',
-				 '       ....     ',
-				 '        ..      ',
-				 '                '],
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    /222122.    ',
-				 '    .111110.    ',
-				 '    .1j1100.    ',
-				 '    .01100.     ',
-				 '     ./000/     ',
-				 '      ./100..   ',
-				 '     /222211/.  ',
-				 '   //.121/111.  ',
-				 '  .01.0100.21.  ',
-				 '  .10..0//.11.  ',
-				 '   .../0../..   ',
-				 '     ./00..     ',
-				 '     .001.      ',
-				 '      ./00.     ',
-				 '      ../0.     ',
-				 '       ....     ',
-				 '       ...      ',
-				 '                '],
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    /222122.    ',
-				 '    .111110.    ',
-				 '    .1j1100.    ',
-				 '    .01100.     ',
-				 '     ./000/     ',
-				 '      ./100.    ',
-				 '     /222211.   ',
-				 '     .121/111.  ',
-				 '    ..0100/21.  ',
-				 '   .0/.0//110.  ',
-				 '   .//.0/.00.   ',
-				 '    ..0.0...    ',
-				 '     ..010.     ',
-				 '      ./00/.    ',
-				 '      ../00.    ',
-				 '      ././.     ',
-				 '      ....      ',
-				 '                '],
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    /222122.    ',
-				 '    .111110.    ',
-				 '    .1j1100.    ',
-				 '    .01100.     ',
-				 '     ./000/     ',
-				 '      ./100.    ',
-				 '     /22221.    ',
-				 '     .121/11.   ',
-				 '     .010/10.   ',
-				 '    .0.0/110.   ',
-				 '    ./.0.00.    ',
-				 '     .0.0..     ',
-				 '     .0.10.     ',
-				 '      .//0.     ',
-				 '     .0.110.    ',
-				 '     ./.000.    ',
-				 '      .....     ',
-				 '                '],
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    /222211.    ',
-				 '    .111110.    ',
-				 '    .1j1100.    ',
-				 '    .01100.     ',
-				 '     ./000/     ',
-				 '      ./10/     ',
-				 '     /22221/    ',
-				 '     /12/21/    ',
-				 '     ./1/21/    ',
-				 '     ../111.    ',
-				 '     ../00.     ',
-				 '     .0/...     ',
-				 '     .0./0/.    ',
-				 '     .././0/.   ',
-				 '    .00..000.   ',
-				 '    ./.../0.    ',
-				 '     ......     ',
-				 '                '],
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    /222121.    ',
-				 '    .111110.    ',
-				 '    .1j1100.    ',
-				 '    .01100.     ',
-				 '     ./00//     ',
-				 '      ./10/     ',
-				 '     /22221/    ',
-				 '     /1./21/    ',
-				 '     /.021/     ',
-				 '     .1111/     ',
-				 '     ..00..     ',
-				 '     .0..0.     ',
-				 '    .10.101.    ',
-				 '    .01..01.    ',
-				 '   .10. .010.   ',
-				 '   .00.  .00.   ',
-				 '    ..   ...    ',
-				 '                '],
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    /222121.    ',
-				 '    .111110.    ',
-				 '    .1j1100.    ',
-				 '    .01100.     ',
-				 '     ./00//     ',
-				 '      ./1//     ',
-				 '      ./22/     ',
-				 '     ..002/.    ',
-				 '    .1102//.    ',
-				 '    .001/0.     ',
-				 '     .../0.     ',
-				 '    ..0..0.     ',
-				 '   .010.101.    ',
-				 '  .000..//00.   ',
-				 '  .01.  ../00.  ',
-				 '   ..     ...   ',
-				 '                ',
-				 '                '],
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    /222121.    ',
-				 '    .111110.    ',
-				 '    .1j1100.    ',
-				 '    .01100.     ',
-				 '     ./00//     ',
-				 '      ./10/     ',
-				 '     /22221/    ',
-				 '     /1./21/    ',
-				 '     /.021/     ',
-				 '     .1111/     ',
-				 '     ..00..     ',
-				 '     .0..0.     ',
-				 '    .10.101.    ',
-				 '    .01..01.    ',
-				 '   .10. .010.   ',
-				 '   .00.  .00.   ',
-				 '    ..   ...    ',
-				 '                '],
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    /222211.    ',
-				 '    .111110.    ',
-				 '    .1j1100.    ',
-				 '    .01100.     ',
-				 '     ./000/     ',
-				 '      ./10/     ',
-				 '     /22221/    ',
-				 '     /12/21/    ',
-				 '     ./1/21/    ',
-				 '     ../111.    ',
-				 '     ../00.     ',
-				 '     .0/...     ',
-				 '     .0./0/.    ',
-				 '     .././0/.   ',
-				 '    .00..000.   ',
-				 '    ./.../0.    ',
-				 '     ......     ',
-				 '                ']], pal, armorAnimation, 'humanLeft');
-			new Animation([
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    .221222/    ',
-				 '    .011111.    ',
-				 '    .0011j1.    ',
-				 '     .00110.    ',
-				 '     /000/.     ',
-				 '    .001/.      ',
-				 '    .12222/     ',
-				 '   .11/121.     ',
-				 '   .01/010.     ',
-				 '   .011/0.0.    ',
-				 '    .00.0./.    ',
-				 '     ..0.0.     ',
-				 '     .01.0.     ',
-				 '     .0//.      ',
-				 '    .011.0.     ',
-				 '    .000./.     ',
-				 '     .....      ',
-				 '                '],
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    .221222/    ',
-				 '    .011111.    ',
-				 '    .0011j1.    ',
-				 '     .00110.    ',
-				 '     /000/.     ',
-				 '    .001/.      ',
-				 '   .112222/     ',
-				 '  .111/121.     ',
-				 '  .12/0010..    ',
-				 '  .011//0./0.   ',
-				 '   .00./0.//.   ',
-				 '    ...0.0..    ',
-				 '     .010..     ',
-				 '    ./00/.      ',
-				 '    .00/..      ',
-				 '     ././.      ',
-				 '      ....      ',
-				 '                '],
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    .221222/    ',
-				 '    .011111.    ',
-				 '    .0011j1.    ',
-				 '     .00110.    ',
-				 '     /000/.     ',
-				 '   ..001/.      ',
-				 '  ./112222/     ',
-				 '  .111/121.//   ',
-				 '  .12.0010.10.  ',
-				 '  .11.//0..01.  ',
-				 '   ../..0/...   ',
-				 '     ..00/.     ',
-				 '      .100.     ',
-				 '     .00/.      ',
-				 '     .0/..      ',
-				 '     ....       ',
-				 '      ...       ',
-				 '                '],
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    .011111/    ',
-				 '    .011111.    ',
-				 '    .0011j1.    ',
-				 '     .00110.    ',
-				 '    ./000/.     ',
-				 '  ..0001/.      ',
-				 ' ./1112222///   ',
-				 ' ./1/./121.02/  ',
-				 ' .11./0010.00.  ',
-				 ' .11.//000...   ',
-				 '  .. .///1.     ',
-				 '     ../00.     ',
-				 '      ../0.     ',
-				 '      .//0.     ',
-				 '     ../0.      ',
-				 '     ....       ',
-				 '      ..        ',
-				 '                '],
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    .221222/    ',
-				 '    .011111.    ',
-				 '    .0011j1.    ',
-				 '     .00110.    ',
-				 '     /000/.     ',
-				 '   ..001/.      ',
-				 '  ./112222/     ',
-				 '  .111/121.//   ',
-				 '  .12.0010.10.  ',
-				 '  .11.//0..01.  ',
-				 '   ../..0/...   ',
-				 '     ..00/.     ',
-				 '      .100.     ',
-				 '     .00/.      ',
-				 '     .0/..      ',
-				 '     ....       ',
-				 '      ...       ',
-				 '                '],
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    .221222/    ',
-				 '    .011111.    ',
-				 '    .0011j1.    ',
-				 '     .00110.    ',
-				 '     /000/.     ',
-				 '    .001/.      ',
-				 '   .112222/     ',
-				 '  .111/121.     ',
-				 '  .12/0010..    ',
-				 '  .011//0./0.   ',
-				 '   .00./0.//.   ',
-				 '    ...0.0..    ',
-				 '     .010..     ',
-				 '    ./00/.      ',
-				 '    .00/..      ',
-				 '     ././.      ',
-				 '      ....      ',
-				 '                '],
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    .221222/    ',
-				 '    .011111.    ',
-				 '    .0011j1.    ',
-				 '     .00110.    ',
-				 '     /000/.     ',
-				 '    .001/.      ',
-				 '    .12222/     ',
-				 '   .11/121.     ',
-				 '   .01/010.     ',
-				 '   .011/0.0.    ',
-				 '    .00.0./.    ',
-				 '     ..0.0.     ',
-				 '     .01.0.     ',
-				 '     .0//.      ',
-				 '    .011.0.     ',
-				 '    .000./.     ',
-				 '     .....      ',
-				 '                '],
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    .112222/    ',
-				 '    .011111.    ',
-				 '    .0011j1.    ',
-				 '     .00110.    ',
-				 '     /000/.     ',
-				 '     /01/.      ',
-				 '    /12222/     ',
-				 '    /12/21/     ',
-				 '    /12/1/.     ',
-				 '    .111/..     ',
-				 '     .00/..     ',
-				 '     .../0.     ',
-				 '    ./0/.0.     ',
-				 '   ./0/./..     ',
-				 '   .000..00.    ',
-				 '    .0/.../.    ',
-				 '     ......     ',
-				 '                '],
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    .121222/    ',
-				 '    .011111.    ',
-				 '    .0011j1.    ',
-				 '     .00110.    ',
-				 '     //00/.     ',
-				 '     /01/.      ',
-				 '    /12222/     ',
-				 '    /12/.1/     ',
-				 '     /120./     ',
-				 '     /1111.     ',
-				 '     ..00..     ',
-				 '     .0..0.     ',
-				 '    .101.01.    ',
-				 '    .10..10.    ',
-				 '   .010. .01.   ',
-				 '   .00.  .00.   ',
-				 '    ...   ..    ',
-				 '                '],
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    .121222/    ',
-				 '    .011111.    ',
-				 '    .0011j1.    ',
-				 '     .00110.    ',
-				 '     //00/.     ',
-				 '     //1/.      ',
-				 '     /22/.      ',
-				 '    ./200..     ',
-				 '    .//2011.    ',
-				 '     .0/100.    ',
-				 '     .0/...     ',
-				 '     .0..0..    ',
-				 '    .101.010.   ',
-				 '   .00//..000.  ',
-				 '  .00/..  .10.  ',
-				 '   ...     ..   ',
-				 '                ',
-				 '                '],
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    .121222/    ',
-				 '    .011111.    ',
-				 '    .0011j1.    ',
-				 '     .00110.    ',
-				 '     //00/.     ',
-				 '     /01/.      ',
-				 '    /12222/     ',
-				 '    /12/.1/     ',
-				 '     /120./     ',
-				 '     /1111.     ',
-				 '     ..00..     ',
-				 '     .0..0.     ',
-				 '    .101.01.    ',
-				 '    .10..10.    ',
-				 '   .010. .01.   ',
-				 '   .00.  .00.   ',
-				 '    ...   ..    ',
-				 '                '],
-				[
-				 '                ',
-				 '                ',
-				 '                ',
-				 '      ////      ',
-				 '     /2222/     ',
-				 '     /2222/     ',
-				 '    .112222/    ',
-				 '    .011111.    ',
-				 '    .0011j1.    ',
-				 '     .00110.    ',
-				 '     /000/.     ',
-				 '     /01/.      ',
-				 '    /12222/     ',
-				 '    /12/21/     ',
-				 '    /12/1/.     ',
-				 '    .111/..     ',
-				 '     .00/..     ',
-				 '     .../0.     ',
-				 '    ./0/.0.     ',
-				 '   ./0/./..     ',
-				 '   .000..00.    ',
-				 '    .0/.../.    ',
-				 '     ......     ',
-				 '                ']], pal, armorAnimation, 'humanRight');
-			new ShirtAnimation([
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'    ‰‰    ‰‰    ',
-				'   ‡ˆˆ‰‰ ‰‰ˆˆ   ',
-				'   †‡‰ˆ ‰ˆˆˆ†   ',
-				'    †‡‡ˆ‡ˆ‡†    ',
-				'     †‡‡†‡†     ',
-				'     ††††††     ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                '], [
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'    ‰‰    ‰‰    ',
-				'   ˆˆ‰‰‰‰‰ˆˆ‡   ',
-				'   †ˆˆˆˆˆˆˆ‡†   ',
-				'    †‡ˆ‡ˆ‡‡†    ',
-				'     †‡†‡‡†     ',
-				'     ††††††     ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                '], pal, armorAnimation, 'ragged leather jerkin animation');
-			new ShirtAnimation([
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'    $$    $$    ',
-				'   $(%((((%($   ',
-				'   $&$%((%$&$   ',
-				'  #$$#&%%&#$$#  ',
-				'  ####$%%$####  ',
-				'  #  ######  #  ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                ',
-				'                '],
-				[
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'    $$    $$    ',
-					'   $(%((((%($   ',
-					'   $&$%((%$&$   ',
-					'  #$$#&%%&#$$#  ',
-					'  ####$%%$####  ',
-					'  #  ######  #  ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                ',
-					'                '], pal, armorAnimation, 'breastplate of power animation');
-			new PantsAnimation('8', '9', ':', ';', pal, armorAnimation, 'orange sweats');
-			new BootsAnimation('C', 'D', 'E', pal, armorAnimation, 'green boots');
-			Player['animation']['sprite'] = new AnimationSet('humanUp', 'humanDown', 'humanLeft', 'humanRight', 'humanAnimation');
-			new GlovesAnimation('N', 'P', 'Q', pal, armorAnimation, 'purple mittens animation');
-			new BeltAnimation('m', 'o', ';', pal, armorAnimation, 'blue belt animation');
-			new ShortHairAnimation('„', '…', '†', '‡', pal, armorAnimation, 'short brown hair animation');
+			{
+				new Animation([
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1111/.    ',
+						'    ./0000/.    ',
+						'     .0000.     ',
+						'     ./00/.     ',
+						'    /1/00/1/    ',
+						'   /11100111/   ',
+						'   /1/1111/1/   ',
+						'  /10.0110.01/  ',
+						'  /10./00/.01/  ',
+						'  /1/./11/./1/  ',
+						'  .00/1111/00.  ',
+						'   ../1001/..   ',
+						'     .1001.     ',
+						'     .0000.     ',
+						'    /10//01/    ',
+						'    .00..00.    ',
+						'     ..  ..     ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1111/.    ',
+						'    ./0000/.    ',
+						'     .0000.     ',
+						'     ./00/.     ',
+						'    /1/00/1/    ',
+						'   /11100111/   ',
+						'   /1/1111/1/   ',
+						'   .0.011/00/   ',
+						'   .0./00./00/  ',
+						'   ././11/./1/  ',
+						'    ./1111/..   ',
+						'     /1000/     ',
+						'     .100/.     ',
+						'     .00/00/    ',
+						'    /10/.//.    ',
+						'    .00....     ',
+						'     ..         ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1111/.    ',
+						'    ./0000/.    ',
+						'     .0000.     ',
+						'     ./00/.     ',
+						'     //00./     ',
+						'    /110011/    ',
+						'   /1/1111/1/   ',
+						'   .0.011/00/   ',
+						'    ../00./0/   ',
+						'    ../11/.01/  ',
+						'     /1111.01/  ',
+						'     /1000/..   ',
+						'     .100/0/    ',
+						'     .00.00.    ',
+						'    /10/...     ',
+						'    .00.        ',
+						'     ..         ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1111/.    ',
+						'    ./0000/.    ',
+						'     .0000.     ',
+						'     ./00/.     ',
+						'     /.00./     ',
+						'    /11001/     ',
+						'    //1111/     ',
+						'    /.011/0/    ',
+						'    ../00.//    ',
+						'     ./11.00/   ',
+						'     /1111.0/   ',
+						'     /100//..   ',
+						'     .10/.0/    ',
+						'     .00....    ',
+						'    /10.        ',
+						'    .00.        ',
+						'     ..         ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1111/.    ',
+						'    ./0000/.    ',
+						'     .0000.     ',
+						'     ./00/.     ',
+						'     //00./     ',
+						'    /110011/    ',
+						'   /1/1111/1/   ',
+						'   .0.011/00/   ',
+						'    ../00./0/   ',
+						'    ../11/.01/  ',
+						'     /1111.01/  ',
+						'     /1000/..   ',
+						'     .100/0/    ',
+						'     .00.00.    ',
+						'    /10/...     ',
+						'    .00.        ',
+						'     ..         ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1111/.    ',
+						'    ./0000/.    ',
+						'     .0000.     ',
+						'     ./00/.     ',
+						'    /1/00/1/    ',
+						'   /11100111/   ',
+						'   /1/1111/1/   ',
+						'   .0.011/00/   ',
+						'   .0./00./00/  ',
+						'   ././11/./1/  ',
+						'    ./1111/..   ',
+						'     /1000/     ',
+						'     .100/.     ',
+						'     .00/00/    ',
+						'    /10/.//.    ',
+						'    .00....     ',
+						'     ..         ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1111/.    ',
+						'    ./0000/.    ',
+						'     .0000.     ',
+						'     ./00/.     ',
+						'    /1/00/1/    ',
+						'   /11100111/   ',
+						'   /1/1111/1/   ',
+						'  /10.0110.01/  ',
+						'  /10./00/.01/  ',
+						'  /1/./11/./1/  ',
+						'  .00/1111/00.  ',
+						'   ../1001/..   ',
+						'     .1001.     ',
+						'     .0000.     ',
+						'    /10//01/    ',
+						'    .00..00.    ',
+						'     ..  ..     ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1111/.    ',
+						'    ./0000/.    ',
+						'     .0000.     ',
+						'     ./00/.     ',
+						'    /1/00/1/    ',
+						'   /11100111/   ',
+						'   /1/1111/1/   ',
+						'   /00/110.0.   ',
+						'  /00/.00/.0.   ',
+						'  /1/./11/./.   ',
+						'   ../1111/.    ',
+						'     /0001/     ',
+						'     ./001.     ',
+						'    /00/00.     ',
+						'    .//./01/    ',
+						'     ....00.    ',
+						'         ..     ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1111/.    ',
+						'    ./0000/.    ',
+						'     .0000.     ',
+						'     ./00/.     ',
+						'     /.00//     ',
+						'    /110011/    ',
+						'   /1/1111/1/   ',
+						'   /00/110.0.   ',
+						'   /0/.00/..    ',
+						'  /10./11/..    ',
+						'  /10.1111/     ',
+						'   ../0001/     ',
+						'    /0/001.     ',
+						'    .00.00.     ',
+						'     .../01/    ',
+						'        .00.    ',
+						'         ..     ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1111/.    ',
+						'    ./0000/.    ',
+						'     .0000.     ',
+						'     ./00/.     ',
+						'     /.00./     ',
+						'     /10011/    ',
+						'     /1111//    ',
+						'    /0/110./    ',
+						'    //.00/..    ',
+						'   /00.11/.     ',
+						'   /0.1111/     ',
+						'   ..//001/     ',
+						'    /0./01.     ',
+						'    ....00.     ',
+						'        .01/    ',
+						'        .00.    ',
+						'         ..     ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1111/.    ',
+						'    ./0000/.    ',
+						'     .0000.     ',
+						'     ./00/.     ',
+						'     /.00//     ',
+						'    /110011/    ',
+						'   /1/1111/1/   ',
+						'   /00/110.0.   ',
+						'   /0/.00/..    ',
+						'  /10./11/..    ',
+						'  /10.1111/     ',
+						'   ../0001/     ',
+						'    /0/001.     ',
+						'    .00.00.     ',
+						'     .../01/    ',
+						'        .00.    ',
+						'         ..     ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1111/.    ',
+						'    ./0000/.    ',
+						'     .0000.     ',
+						'     ./00/.     ',
+						'    /1/00/1/    ',
+						'   /11100111/   ',
+						'   /1/1111/1/   ',
+						'   /00/110.0.   ',
+						'  /00/.00/.0.   ',
+						'  /1/./11/./.   ',
+						'   ../1111/.    ',
+						'     /0001/     ',
+						'     ./001.     ',
+						'    /00/00.     ',
+						'    .//./01/    ',
+						'     ....00.    ',
+						'         ..     ',
+						'                ']], pal, armorAnimation, 'humanUp');
+				new Animation([
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1001/.    ',
+						'    ./0000/.    ',
+						'     .j//j.     ',
+						'     .0000.     ',
+						'    /1.//.1/    ',
+						'   /10000001/   ',
+						'   /1/1111/1/   ',
+						'  /10.0110.01/  ',
+						'  /10./110.01/  ',
+						'  /1/./00/./1/  ',
+						'  .00/1111/00.  ',
+						'   ../1001/..   ',
+						'     .1001.     ',
+						'     .0000.     ',
+						'    /11//11/    ',
+						'    .00..00.    ',
+						'     ..  ..     ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1001/.    ',
+						'    ./0000/.    ',
+						'     .j//j.     ',
+						'     .0000.     ',
+						'    0/.//./0    ',
+						'    /000001/    ',
+						'   /1/1111/1/   ',
+						'   .0.0110.0/   ',
+						'   .0./11010/   ',
+						'  /.0./11/11.   ',
+						'  .0./1111..    ',
+						'   .//1001.     ',
+						'    .10001.     ',
+						'    .11000.     ',
+						'    .00./11/    ',
+						'     .. .00.    ',
+						'         ..     ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1001/.    ',
+						'    ./0000/.    ',
+						'     .j//j.     ',
+						'     .0000.     ',
+						'     /.//./     ',
+						'    0.00001/    ',
+						'    ./1111/1.   ',
+						'    ..0111/0.   ',
+						'   /../10/10.   ',
+						'   .0./1/10.    ',
+						'    ./111..     ',
+						'    .10001.     ',
+						'    .11001.     ',
+						'    .00.00.     ',
+						'     .. /11/    ',
+						'        .00.    ',
+						'         ..     ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1001/.    ',
+						'    ./0000/.    ',
+						'     .j//j.     ',
+						'     .0000.     ',
+						'     /.//./     ',
+						'    0.0000.0    ',
+						'    ./111.1.    ',
+						'    ..01100.    ',
+						'    ../1011.    ',
+						'     ./100..    ',
+						'     .111..     ',
+						'    .11001.     ',
+						'    .00.01.     ',
+						'     ...00.     ',
+						'        /11/    ',
+						'        .00.    ',
+						'         ..     ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1001/.    ',
+						'    ./0000/.    ',
+						'     .j//j.     ',
+						'     .0000.     ',
+						'     /.//./     ',
+						'    0.00001/    ',
+						'    ./1111/1.   ',
+						'    ..0111/0.   ',
+						'   /../10/10.   ',
+						'   .0./1/10.    ',
+						'    ./111..     ',
+						'    .10001.     ',
+						'    .11001.     ',
+						'    .00.00.     ',
+						'     .. /11/    ',
+						'        .00.    ',
+						'         ..     ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1001/.    ',
+						'    ./0000/.    ',
+						'     .j//j.     ',
+						'     .0000.     ',
+						'    0/.//./0    ',
+						'    /000001/    ',
+						'   /1/1111/1/   ',
+						'   .0.0110.0/   ',
+						'   .0./11010/   ',
+						'  /.0./11/11.   ',
+						'  .0./1111..    ',
+						'   .//1001.     ',
+						'    .11001.     ',
+						'    .10000.     ',
+						'    .00./11/    ',
+						'     .. .00.    ',
+						'         ..     ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1001/.    ',
+						'    ./0000/.    ',
+						'     .j//j.     ',
+						'     .0000.     ',
+						'    /1.//.1/    ',
+						'   /10000001/   ',
+						'   /1/1111/1/   ',
+						'  /10.0110.01/  ',
+						'  /10./110.01/  ',
+						'  /1/./11/./1/  ',
+						'  .00/1111/00.  ',
+						'   ../1001/..   ',
+						'     .1001.     ',
+						'     .0000.     ',
+						'    /11//11/    ',
+						'    .00..00.    ',
+						'     ..  ..     ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1001/.    ',
+						'    ./0000/.    ',
+						'     .j//j.     ',
+						'     .0000.     ',
+						'    0/.//./0    ',
+						'    /100000/    ',
+						'   /1/1111/1/   ',
+						'   /0.0110.0.   ',
+						'   /01011/.0.   ',
+						'   .11/11/.0./  ',
+						'    ..1111/.0.  ',
+						'     .1001//.   ',
+						'     .10001.    ',
+						'     .00011.    ',
+						'    /11/.00.    ',
+						'    .00. ..     ',
+						'     ..         ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1001/.    ',
+						'    ./0000/.    ',
+						'     .j//j.     ',
+						'     .0000.     ',
+						'     /.//./     ',
+						'    /10000.0    ',
+						'   .1/1111/.    ',
+						'   .0/1110..    ',
+						'   .01/01/../   ',
+						'    .01/1/.0.   ',
+						'     ..111/.    ',
+						'     .10001.    ',
+						'     .10011.    ',
+						'     .00.00.    ',
+						'    /11/ ..     ',
+						'    .00.        ',
+						'     ..         ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1001/.    ',
+						'    ./0000/.    ',
+						'     .j//j.     ',
+						'     .0000.     ',
+						'     /.//./     ',
+						'    0.0000.0    ',
+						'    .1.111/.    ',
+						'    .00110..    ',
+						'    .1101/..    ',
+						'    ..001/.     ',
+						'     ..111.     ',
+						'     .10011.    ',
+						'     .10.00.    ',
+						'     .00...     ',
+						'    /11/        ',
+						'    .00.        ',
+						'     ..         ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1001/.    ',
+						'    ./0000/.    ',
+						'     .j//j.     ',
+						'     .0000.     ',
+						'     /.//./     ',
+						'    /10000.0    ',
+						'   .1/1111/.    ',
+						'   .0/1110..    ',
+						'   .01/01/../   ',
+						'    .01/1/.0.   ',
+						'     ..111/.    ',
+						'     .10001.    ',
+						'     .10011.    ',
+						'     .00.00.    ',
+						'    /11/ ..     ',
+						'    .00.        ',
+						'     ..         ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /1221/     ',
+						'     /1111/     ',
+						'    /111111/    ',
+						'    ./1001/.    ',
+						'    ./0000/.    ',
+						'     .j//j.     ',
+						'     .0000.     ',
+						'    0/.//./0    ',
+						'    /100000/    ',
+						'   /1/1111/1/   ',
+						'   /0.0110.0.   ',
+						'   /01011/.0.   ',
+						'   .11/11/.0./  ',
+						'    ..1111/.0.  ',
+						'     .1001//.   ',
+						'     .10001.    ',
+						'     .00011.    ',
+						'    /11/.00.    ',
+						'    .00. ..     ',
+						'     ..         ',
+						'                ']], pal, armorAnimation, 'humanDown');
+				new Animation([
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    /222122.    ',
+						'    .111110.    ',
+						'    .1j1100.    ',
+						'    .01100.     ',
+						'     ./000/     ',
+						'      ./100.    ',
+						'     /22221.    ',
+						'     .121/11.   ',
+						'     .010/10.   ',
+						'    .0.0/110.   ',
+						'    ./.0.00.    ',
+						'     .0.0..     ',
+						'     .0.10.     ',
+						'      .//0.     ',
+						'     .0.110.    ',
+						'     ./.000.    ',
+						'      .....     ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    /222122.    ',
+						'    .111110.    ',
+						'    .1j1100.    ',
+						'    .01100.     ',
+						'     ./000/     ',
+						'      ./100.    ',
+						'     /222211.   ',
+						'     .121/111.  ',
+						'    ..0100/21.  ',
+						'   .0/.0//110.  ',
+						'   .//.0/.00.   ',
+						'    ..0.0...    ',
+						'     ..010.     ',
+						'      ./00/.    ',
+						'      ../00.    ',
+						'      ././.     ',
+						'      ....      ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    /222122.    ',
+						'    .111110.    ',
+						'    .1j1100.    ',
+						'    .01100.     ',
+						'     ./000/     ',
+						'      ./100..   ',
+						'     /222211/.  ',
+						'   //.121/111.  ',
+						'  .01.0100.21.  ',
+						'  .10..0//.11.  ',
+						'   .../0../..   ',
+						'     ./00..     ',
+						'     .001.      ',
+						'      ./00.     ',
+						'      ../0.     ',
+						'       ....     ',
+						'       ...      ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    /111110.    ',
+						'    .111110.    ',
+						'    .1j1100.    ',
+						'    .01100.     ',
+						'     ./000/.    ',
+						'      ./1000..  ',
+						'   ///2222111/. ',
+						'  /20.121/./1/. ',
+						'  .00.0100/.11. ',
+						'   ...000//.11. ',
+						'     .1///. ..  ',
+						'     .00/..     ',
+						'     .0/..      ',
+						'     .0//.      ',
+						'      .0/..     ',
+						'       ....     ',
+						'        ..      ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    /222122.    ',
+						'    .111110.    ',
+						'    .1j1100.    ',
+						'    .01100.     ',
+						'     ./000/     ',
+						'      ./100..   ',
+						'     /222211/.  ',
+						'   //.121/111.  ',
+						'  .01.0100.21.  ',
+						'  .10..0//.11.  ',
+						'   .../0../..   ',
+						'     ./00..     ',
+						'     .001.      ',
+						'      ./00.     ',
+						'      ../0.     ',
+						'       ....     ',
+						'       ...      ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    /222122.    ',
+						'    .111110.    ',
+						'    .1j1100.    ',
+						'    .01100.     ',
+						'     ./000/     ',
+						'      ./100.    ',
+						'     /222211.   ',
+						'     .121/111.  ',
+						'    ..0100/21.  ',
+						'   .0/.0//110.  ',
+						'   .//.0/.00.   ',
+						'    ..0.0...    ',
+						'     ..010.     ',
+						'      ./00/.    ',
+						'      ../00.    ',
+						'      ././.     ',
+						'      ....      ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    /222122.    ',
+						'    .111110.    ',
+						'    .1j1100.    ',
+						'    .01100.     ',
+						'     ./000/     ',
+						'      ./100.    ',
+						'     /22221.    ',
+						'     .121/11.   ',
+						'     .010/10.   ',
+						'    .0.0/110.   ',
+						'    ./.0.00.    ',
+						'     .0.0..     ',
+						'     .0.10.     ',
+						'      .//0.     ',
+						'     .0.110.    ',
+						'     ./.000.    ',
+						'      .....     ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    /222211.    ',
+						'    .111110.    ',
+						'    .1j1100.    ',
+						'    .01100.     ',
+						'     ./000/     ',
+						'      ./10/     ',
+						'     /22221/    ',
+						'     /12/21/    ',
+						'     ./1/21/    ',
+						'     ../111.    ',
+						'     ../00.     ',
+						'     .0/...     ',
+						'     .0./0/.    ',
+						'     .././0/.   ',
+						'    .00..000.   ',
+						'    ./.../0.    ',
+						'     ......     ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    /222121.    ',
+						'    .111110.    ',
+						'    .1j1100.    ',
+						'    .01100.     ',
+						'     ./00//     ',
+						'      ./10/     ',
+						'     /22221/    ',
+						'     /1./21/    ',
+						'     /.021/     ',
+						'     .1111/     ',
+						'     ..00..     ',
+						'     .0..0.     ',
+						'    .10.101.    ',
+						'    .01..01.    ',
+						'   .10. .010.   ',
+						'   .00.  .00.   ',
+						'    ..   ...    ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    /222121.    ',
+						'    .111110.    ',
+						'    .1j1100.    ',
+						'    .01100.     ',
+						'     ./00//     ',
+						'      ./1//     ',
+						'      ./22/     ',
+						'     ..002/.    ',
+						'    .1102//.    ',
+						'    .001/0.     ',
+						'     .../0.     ',
+						'    ..0..0.     ',
+						'   .010.101.    ',
+						'  .000..//00.   ',
+						'  .01.  ../00.  ',
+						'   ..     ...   ',
+						'                ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    /222121.    ',
+						'    .111110.    ',
+						'    .1j1100.    ',
+						'    .01100.     ',
+						'     ./00//     ',
+						'      ./10/     ',
+						'     /22221/    ',
+						'     /1./21/    ',
+						'     /.021/     ',
+						'     .1111/     ',
+						'     ..00..     ',
+						'     .0..0.     ',
+						'    .10.101.    ',
+						'    .01..01.    ',
+						'   .10. .010.   ',
+						'   .00.  .00.   ',
+						'    ..   ...    ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    /222211.    ',
+						'    .111110.    ',
+						'    .1j1100.    ',
+						'    .01100.     ',
+						'     ./000/     ',
+						'      ./10/     ',
+						'     /22221/    ',
+						'     /12/21/    ',
+						'     ./1/21/    ',
+						'     ../111.    ',
+						'     ../00.     ',
+						'     .0/...     ',
+						'     .0./0/.    ',
+						'     .././0/.   ',
+						'    .00..000.   ',
+						'    ./.../0.    ',
+						'     ......     ',
+						'                ']], pal, armorAnimation, 'humanLeft');
+				new Animation([
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    .221222/    ',
+						'    .011111.    ',
+						'    .0011j1.    ',
+						'     .00110.    ',
+						'     /000/.     ',
+						'    .001/.      ',
+						'    .12222/     ',
+						'   .11/121.     ',
+						'   .01/010.     ',
+						'   .011/0.0.    ',
+						'    .00.0./.    ',
+						'     ..0.0.     ',
+						'     .01.0.     ',
+						'     .0//.      ',
+						'    .011.0.     ',
+						'    .000./.     ',
+						'     .....      ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    .221222/    ',
+						'    .011111.    ',
+						'    .0011j1.    ',
+						'     .00110.    ',
+						'     /000/.     ',
+						'    .001/.      ',
+						'   .112222/     ',
+						'  .111/121.     ',
+						'  .12/0010..    ',
+						'  .011//0./0.   ',
+						'   .00./0.//.   ',
+						'    ...0.0..    ',
+						'     .010..     ',
+						'    ./00/.      ',
+						'    .00/..      ',
+						'     ././.      ',
+						'      ....      ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    .221222/    ',
+						'    .011111.    ',
+						'    .0011j1.    ',
+						'     .00110.    ',
+						'     /000/.     ',
+						'   ..001/.      ',
+						'  ./112222/     ',
+						'  .111/121.//   ',
+						'  .12.0010.10.  ',
+						'  .11.//0..01.  ',
+						'   ../..0/...   ',
+						'     ..00/.     ',
+						'      .100.     ',
+						'     .00/.      ',
+						'     .0/..      ',
+						'     ....       ',
+						'      ...       ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    .011111/    ',
+						'    .011111.    ',
+						'    .0011j1.    ',
+						'     .00110.    ',
+						'    ./000/.     ',
+						'  ..0001/.      ',
+						' ./1112222///   ',
+						' ./1/./121.02/  ',
+						' .11./0010.00.  ',
+						' .11.//000...   ',
+						'  .. .///1.     ',
+						'     ../00.     ',
+						'      ../0.     ',
+						'      .//0.     ',
+						'     ../0.      ',
+						'     ....       ',
+						'      ..        ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    .221222/    ',
+						'    .011111.    ',
+						'    .0011j1.    ',
+						'     .00110.    ',
+						'     /000/.     ',
+						'   ..001/.      ',
+						'  ./112222/     ',
+						'  .111/121.//   ',
+						'  .12.0010.10.  ',
+						'  .11.//0..01.  ',
+						'   ../..0/...   ',
+						'     ..00/.     ',
+						'      .100.     ',
+						'     .00/.      ',
+						'     .0/..      ',
+						'     ....       ',
+						'      ...       ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    .221222/    ',
+						'    .011111.    ',
+						'    .0011j1.    ',
+						'     .00110.    ',
+						'     /000/.     ',
+						'    .001/.      ',
+						'   .112222/     ',
+						'  .111/121.     ',
+						'  .12/0010..    ',
+						'  .011//0./0.   ',
+						'   .00./0.//.   ',
+						'    ...0.0..    ',
+						'     .010..     ',
+						'    ./00/.      ',
+						'    .00/..      ',
+						'     ././.      ',
+						'      ....      ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    .221222/    ',
+						'    .011111.    ',
+						'    .0011j1.    ',
+						'     .00110.    ',
+						'     /000/.     ',
+						'    .001/.      ',
+						'    .12222/     ',
+						'   .11/121.     ',
+						'   .01/010.     ',
+						'   .011/0.0.    ',
+						'    .00.0./.    ',
+						'     ..0.0.     ',
+						'     .01.0.     ',
+						'     .0//.      ',
+						'    .011.0.     ',
+						'    .000./.     ',
+						'     .....      ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    .112222/    ',
+						'    .011111.    ',
+						'    .0011j1.    ',
+						'     .00110.    ',
+						'     /000/.     ',
+						'     /01/.      ',
+						'    /12222/     ',
+						'    /12/21/     ',
+						'    /12/1/.     ',
+						'    .111/..     ',
+						'     .00/..     ',
+						'     .../0.     ',
+						'    ./0/.0.     ',
+						'   ./0/./..     ',
+						'   .000..00.    ',
+						'    .0/.../.    ',
+						'     ......     ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    .121222/    ',
+						'    .011111.    ',
+						'    .0011j1.    ',
+						'     .00110.    ',
+						'     //00/.     ',
+						'     /01/.      ',
+						'    /12222/     ',
+						'    /12/.1/     ',
+						'     /120./     ',
+						'     /1111.     ',
+						'     ..00..     ',
+						'     .0..0.     ',
+						'    .101.01.    ',
+						'    .10..10.    ',
+						'   .010. .01.   ',
+						'   .00.  .00.   ',
+						'    ...   ..    ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    .121222/    ',
+						'    .011111.    ',
+						'    .0011j1.    ',
+						'     .00110.    ',
+						'     //00/.     ',
+						'     //1/.      ',
+						'     /22/.      ',
+						'    ./200..     ',
+						'    .//2011.    ',
+						'     .0/100.    ',
+						'     .0/...     ',
+						'     .0..0..    ',
+						'    .101.010.   ',
+						'   .00//..000.  ',
+						'  .00/..  .10.  ',
+						'   ...     ..   ',
+						'                ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    .121222/    ',
+						'    .011111.    ',
+						'    .0011j1.    ',
+						'     .00110.    ',
+						'     //00/.     ',
+						'     /01/.      ',
+						'    /12222/     ',
+						'    /12/.1/     ',
+						'     /120./     ',
+						'     /1111.     ',
+						'     ..00..     ',
+						'     .0..0.     ',
+						'    .101.01.    ',
+						'    .10..10.    ',
+						'   .010. .01.   ',
+						'   .00.  .00.   ',
+						'    ...   ..    ',
+						'                '],
+					[
+						'                ',
+						'                ',
+						'                ',
+						'      ////      ',
+						'     /2222/     ',
+						'     /2222/     ',
+						'    .112222/    ',
+						'    .011111.    ',
+						'    .0011j1.    ',
+						'     .00110.    ',
+						'     /000/.     ',
+						'     /01/.      ',
+						'    /12222/     ',
+						'    /12/21/     ',
+						'    /12/1/.     ',
+						'    .111/..     ',
+						'     .00/..     ',
+						'     .../0.     ',
+						'    ./0/.0.     ',
+						'   ./0/./..     ',
+						'   .000..00.    ',
+						'    .0/.../.    ',
+						'     ......     ',
+						'                ']], pal, armorAnimation, 'humanRight');
+				Player['animation']['sprite'] = new AnimationSet('humanUp', 'humanDown', 'humanLeft', 'humanRight', 'humanAnimation');
+			} // human animations
+			{
+				new ShirtAnimation([
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'    ‰‰    ‰‰    ',
+					'   ‡ˆˆ‰‰ ‰‰ˆˆ   ',
+					'   †‡‰ˆ ‰ˆˆˆ†   ',
+					'    †‡‡ˆ‡ˆ‡†    ',
+					'     †‡‡†‡†     ',
+					'     ††††††     ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                '], [
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'    ‰‰    ‰‰    ',
+					'   ˆˆ‰‰‰‰‰ˆˆ‡   ',
+					'   †ˆˆˆˆˆˆˆ‡†   ',
+					'    †‡ˆ‡ˆ‡‡†    ',
+					'     †‡†‡‡†     ',
+					'     ††††††     ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                '], pal, armorAnimation, 'ragged leather jerkin animation');
+				new ShirtAnimation([
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'    &&    &&    ',
+					'   988:&%:889   ',
+					'   7((8(#8((7   ',
+					'  7:88:8%:88:7  ',
+					'  &8&&8&&8&  ',
+					'  &  &8&%8&  &  ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                '], [
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'    &&    &&    ',
+					'   988:%%:889   ',
+					'   7((8((8((7   ',
+					'  7:88:88:88:7  ',
+					'  &8%&8&&8&%8&  ',
+					'  &  %8%%8%  &  ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                '], pal, armorAnimation, 'lumberjack flannel animation');
+			} // shirt animations
+			{
+				new ShortHairAnimation('„', '…', '†', '‡', pal, armorAnimation, 'short brown hair animation');
+				new ShortBeardAnimation('„', '…', '†', pal, armorAnimation, 'short brown beard animation');
+			} // hair animations
+			{
+				new BootsAnimation('‡', 'ˆ', '‰', pal, armorAnimation, 'brown boots animation');
+			} // boot animations
+			{
+				new PantsAnimation('.', '1', '2', '2', pal, armorAnimation, 'canvas pants animation');
+			} // pants animations
 		} // animations
 		{
 			new Enemy('slime', 'slime', 1, 4, 2, 100, 100, 1, 3, 4, 0, 4, { 'booger': 100, 'skull': 50 }, true);
@@ -13554,139 +14171,145 @@ var programCode = function (processingInstance) {
 				'gbbbh']);
 		} // guis
 		{
-			var Buff = function (name, image, stat, amount, duration) {
-				this.name = name;
-				this.image = image;
-				this.stat = stat;
-				this.amount = amount;
-				this.duration = duration;
-				buffs[this.name] = this;
-			};
-			Buff.prototype.give = function () {
-				Player['stats'][this.stat] += this.amount;
-				Player['buffs'][this.name] = this.duration * FRAME_RATE;
-			};
-			Buff.prototype.remove = function () {
-				Player['stats'][this.stat] -= this.amount;
-				delete Player['buffs'][this.name];
-			};
-			Buff.prototype.draw = function (x, y, buffTime) {
-				images[this.image].draw(x, y);
-				if (Hover(x, y, REAL_SIZE, REAL_SIZE)) {
-					var message = this.name + '\n';
-					if (this.stat === 'curFortitude') {
-						message += 'health';
-					} else if (this.stat === 'curEndurance') {
-						message += 'energy';
-					} else {
-						message += this.stat;
-					}
-					if (this.amount < 0) {
-						message += ' decreased\nby ';
-					} else {
-						message += ' increased\nby ';
-					}
-					message += this.amount + '\n' + floor(buffTime / FRAME_RATE) + 's remaining';
-					createAlert(x + REAL_SIZE, y, message, this.name + 'Buff');
-				}
-			};
-		} // buffs
-		{
-			new Drink('booger', 'booger', 12, 12, 25);
-			new Item('skull', 'booger', 125, 75);
-			new Armor('ragged leather jerkin', 'ragged leather jerkin', 8, 3, 'chest', 'ragged leather jerkin animation', { 'armor': 6 });
-			new Armor('random helmet', 'booger', 12, 12, 'head', 'humanAnimation', { 'vigor': 10, 'armor': 10 });
-			new Armor('breastplate of power', 'ragged leather jerkin', 8, 3, 'chest', 'breastplate of power animation', { 'armor': 200, 'strength': 300 });
-			new Armor('purple mittens', 'ragged leather jerkin', 8, 3, 'hands', 'purple mittens animation', { 'armor': 10, 'vigor': 20 });
-			new Armor('orange sweats', 'booger', 12, 12, 'legs', 'orange sweats', { 'armor': 50 });
-			new Armor('blue belt', 'booger', 12, 12, 'waist', 'blue belt animation', { 'armor': 50 });
-			new Armor('green boots', 'booger', 12, 12, 'feet', 'green boots', { 'strength': -2 });
-			new Armor('short brown hair', 'booger', 0, 0, 'hair', 'short brown hair animation', {});
-			new BagItem('brown bag', 'brown bag', 103, 32, 8);
+			{
+				new Armor('short brown hair', 'booger', 0, 0, 'hair', 'short brown hair animation', {});
+				new Armor('short brown beard', 'booger', 0, 0, 'face', 'short brown beard animation', {});
+			} // hair
+			{
+				new Armor('worn boots', 'brown boots', 12, 2, 'feet', 'brown boots animation', { 'armor': 2 });
+			} // boots
+			{
+				new Armor('ragged leather jerkin', 'ragged leather jerkin', 24, 4, 'chest', 'ragged leather jerkin animation', { 'armor': 6 });
+				new Armor('lumberjack flannel', 'lumberjack flannel', 45, 8, 'chest', 'lumber jack flannel animation', { 'armor': 10, 'strength': 2 });
+			} // shirts
+			{
+				new BagItem('brown bag', 'brown bag', 103, 32, 8);
+			} // boots
+			{
+				new Armor('canvas pants', 'canvas pants', 18, 3, 'legs', 'canvas pants animation', { 'armor': 4 });
+			} // pants
+			{
+				new Armor('bread knife', 'bread knife', 30, 5, 'mainhand', 'nothing', { 'weapon damage': 10 });
+			} // weapons
 		} // items
 		{
 			new Screen(0, 0, 0, [
 				'$$$$$$$$$$$$$$$$$$$$$$$$',
-				'$(($$455556$($$$((($$$$$',
-				'$(($(122223$$((($$$!!($$',
-				'$($$$.0000/$$$$$$!$%!$$$',
-				'$!$!!)-,+,*$!!$!!&%&&$$$',
-				'$$!!!(!!$#!!!&!!!%&!!!!!',
-				'$$$!!&!!!!!&!%%!$$!#!!$$',
-				'$$$$!&&!(!&%!!&$$$!!!$$$',
-				'$$$$!&!$!!!$$$!!$$!&%$$$',
-				'$($$!!!!!$($$!!&!!%&!!$(',
-				'$($!!&%%&$$$$#%%!!(%!!$$',
-				'$$&#!$$&%&!!$&%!$!!!!$$$',
-				'($%#$$$!$!!!!%&$(!!!#!$$',
-				'$($!$$$$$$$!!!($$$$$$($$',
-				'$($(($($($(($$$$$$($$(($',
-				'$$$$$$$$$$$$$($$($$$$$$$'],
-				{
-					'enemy': [
-						{ 'name': 'slime', 'x': 3, 'y': 4 }
-					],
-					'quest': [
-						{ name: 'Gerald', x: 13, y: 7 }
-					]
-				});
+				'$$$(!($$$($$$456$$$$$$($',
+				'$$$!!!!$$$$$$.0/$$!$$$$$',
+				'(!!JKK45556$!)-*!JKKKI$$',
+				'$!!HFF12223!!!!(!HF!FH$$',
+				'!!!HFF.000/!!!!!!HF!FH!$',
+				'!E!LKK),+-*!!G!FFLM!LM!!',
+				'!!!!!!$!(!!%&!!!!!!&!!!!',
+				'!!!!%&!!!!!&!!F!!!!!!%!!',
+				'!!$!!E!!!%!!!!!E!(!%!EF!',
+				'&!!!E!!!!!E$$!!!!E!!!!!!',
+				'!%&!!!E$F!!$#$!!!!!E!!&!',
+				'!%!#!!EEE!!!(!E%%!EE$E%&',
+				'!(!!!!!E!!!!!!!!%#!EE!%!',
+				'!!!!%!%&!(!!!E!!!!!&!!!!',
+				'!!!!!!&!!!!!!!!!!!&%!!!!']);
 			new Screen(1, 0, 0, [
 				'$$$$$$$$$$$$$$$$$$$$$$$$',
-				'$(($$(!!!$$$$$$$$$$$$$$$',
-				'$(($!(($$$($$$$(!!$$$($$',
-				'$!!$!!$$$$!$$$!!!($%$!$$',
-				'$!!!!$($!!!!!$(!!!#&&!!$',
-				'!!(!!$!!!$$$!!!!!!!$!(!(',
-				'$$!!!!!!!$($!%&%$!!!(($$',
-				'$!!$!#!!$$$!!&%!$$!!!$$(',
-				'$$!!!!!($(!!$!!($$%#&$$$',
-				'$$($!!!&$$$$!!!$$&%&!!((',
-				'$($$(!&%&$$!$!!$(%(%&$$$',
-				'$$$$!$!!%$!$$$%&#%&&%$$$',
-				'$($$$(!#!!$$($&&%&%%$$($',
-				'$$$$$$$$$!$$$$$$$$$$($($',
-				'$$$($($$$$($$$($$($$!$$$',
-				'$$$$$$$$$$($$$($$$$$$$$$']);
-			new Interior(0, 0, 0, 6, 4, 9, 8, 9, 9, [
-				'                        ',
-				'                        ',
-				'                        ',
-				'                        ',
-				'       <88888888=       ',
-				'       :DCCD7777;       ',
-				'       :77777C77;       ',
-				'       :77777777;       ',
-				'       :7A7A77A7;       ',
-				'       >9@9B99B9?       ',
-				'                        ',
-				'                        ',
-				'                        ',
-				'                        ',
-				'                        ',
-				'                        '], {
-				'interacting': [
-					{ name: 'booger', x: 13, y: 7 }
-				]
-			});
+				'$$$$$$$$$$$$$$$$$($$$$$$',
+				'$$$$($$$$$$($$$$$$!$$$$$',
+				'$$$$!$$$$($$$$($$$!$!$($',
+				'($!!!$$$!$$$$!!$$!!!!$$$',
+				'E!!!!!$$!!!$!!!$#!&$$$$$',
+				'!!!$!!$!!!!!!(!!!&%%!$$$',
+				'!&!!!!!!!$&%!!!!$!!!!$$$',
+				'!!&E$&!!!!%!!!!$$$!!$$$$',
+				'!!EEE#!E!!!$!!!!$(!$$$($',
+				'!!!EE(!!&!!($$!!!!&!!$$$',
+				'!!!!!!!!!!$$$$$!&&!!$$$$',
+				'!!!%E%&!!$$$$$#!!$!!$$$$',
+				'!!EEEE%!!!$($!&!$$$!!$$$',
+				'!!!E!%!!!!!#!&%&!$!!$($$',
+				'!!!!!!!!!!!!!!!!!!!$$$$$']);
+			new Screen(-1, 0, 0, [
+				'$$$$$$$$$$$$$$$$$$$$$$$$',
+				'$($$$$$($$$$$$$$$($$$($$',
+				'$$$$!$($$$$($$$$$$$!$$$$',
+				'$$!!!!$$$$$!$$!!!$!!$!$(',
+				'$$$$!&%!$!!!$!!&!!!!&!!$',
+				'$($!#!%&!!!!!!&%!!!&%!!!',
+				'$$($$!!&!!!!(#!!$(!!&(!!',
+				'$$$$!!!!$!!!!!!$$$$!!!!!',
+				'$$(!!!!$$$(!!!!$#$!!!!!!',
+				'$$$!&!!!$($!!&!!!!!!!EF!',
+				'($$%%!!!!!$!!!!!!!!!$EE!',
+				'$$$$&(!!!!!!!!$$$!!!!!#!',
+				'$$$!!!!!#!!%!$$($E!!!&!!',
+				'$$!!!!!#(!%&&!$$$E!!&%!!',
+				'$($!!!!!!!&%!!!$EEF!!(!!',
+				'$$$$!!!!!!!!!!!!!!!!!!!!']);
+			new Screen(-1, 1, 0, [
+				'$$$$!!!!!!&!!!!!!!!!!!!!',
+				'$$$#!!!!!%&%!!$!!!$$!!!!',
+				'$$(!!!!$!!!&!!!!!!$!!!!!',
+				'$!!!$!$($!!$!!#!$!!!($$!',
+				'$$!!!!!$$!!!!!!!$$$!!$!!',
+				'$$!!!!!!!&%&!!$$$$$!!!!!',
+				'$$$!!&&!!%&!!!!$$(!!!&&!',
+				'$($!!&%!$$#!!!!!$$!!!%!%',
+				'$$$!!!&$$$$$!!&!!!!(!&%!',
+				'$$(!$&!!$($!!!%&!!!!!!&!',
+				'$$$$$!!!$!!!!!!!!!!!!#!!',
+				'$$$$!!!!&!!!!$$!(!!!$$!$',
+				'$$(($#!!&%&!!!$!!!!!$$$$',
+				'($$$$$$!!!$!!#$$$!!!!$$$',
+				'$$$$$$($$$$$$$$($$!%!$$$',
+				'$$$$$$$$$$$($$$$$$$!!!$$']);
+			new Screen(0, 1, 0, [
+				'!!!!!!!!!!!!!!!!!!!!!!!!',
+				'!!!!E!!&%!EE!!&!!E!!!!!!',
+				'!!!$EE!(&EEEE!&%EEF!#$!!',
+				'!$$$E!!!!!!FE!!EEF!!$$$!',
+				'!#($!%!!!!!!!!!!#!!!!($!',
+				'!!!!!!!$!!!!!!%!!!!!!!!!',
+				'!!!!$!!!$!$$!!!E!!!$$!&&',
+				'!!&%&!!$$$$$(!!&E!$($&%!',
+				'!(%&!!!!$($$!!(!!!$$#%(!',
+				'!!&!!$!!!#$$!!!!!!!$!!&!',
+				'!!!!$($!!!!!&!!$!!!!!!!!',
+				'$!!!!$!!!!&%%!$($!!!!$!!',
+				'$$!!!!!!$!!&!$$$$!$!!!!$',
+				'($$$$!#$$$$!$$$$$($$#$$$',
+				'$$$$$$($$$$$$$$$$$$$$$$$',
+				'($$$($$$$$$$$($$$$$$$$($']);
+			new Screen(1, 1, 0, [
+				'!!!!!!!!!&&!!!!!!!!$$$$$',
+				'!!!!E!!!!!%&%!!$!&&!($$$',
+				'!!!EE#!!FF!!!!$$$!%!#$$(',
+				'!!EFE$!!EEFE!!$($$!%!$$$',
+				'!!$$E(!!!EE#!!!$$!!&&$$$',
+				'!!#$!!!!!!!!!!!!!!!%!!$$',
+				'!!!!%!$$!!!!!$$!!(!!!$$$',
+				'!!!!&$$$$$!!$$#!&!!!$$$$',
+				'!$!&%$$($!&!$(!%&!!!$($$',
+				'!$$!!$#$!!&!!!!!!!$!$$($',
+				'!($!!!!!!!%&!!!$$!#!!$$$',
+				'!!!!&!!!!(!!!!$$$!!!$$$$',
+				'$!#&%!$!(!!!$$$($$!$$$($',
+				'($!!!$$$$$$($$$$$$$$$$$$',
+				'$$$$$$$$$$$$$$$$$$$($$$$',
+				'$$$$($$$($$$$($$($$$$$$$']);
+
 		} // maps
 		{
 			new Ability('slash', 'damage', 'slash', 'humanUp', 20, 10, 3);
-			new Ability('lucky charms', 'buff', 'lucky charms', 'humanUp', '23', 40, 6);
 		} // abilities
 		{
-			new Npc('Gerald', 'quest', 'humanAnimation', { 'chest': 'ragged leather jerkin' });
-			new Npc('Steve', 'quest', 'humanAnimation', { 'chest': 'ragged leather jerkin' });
+
 		} // npcs
 		{
-			new Interacting('booger', 'booger', 'trigger', 'nothing', false);
 		} // interactings
 		{
-			new Quest('stupid', 'Gerald', 'Gerald', 'nothing', { 'ragged leather jerkin': 1 }, 20, 100, 'trigger', 'booger', 1, 'asdf\naa', 'asdf\naa');
-			new Quest('steve is dumb', 'Steve', 'Steve', 'nothing', { 'booger': 15 }, 20, 100, 'kill', 'slime', 1, 'kill slime', 'thanks');
+
 		} // quests
 		{
-			new Buff('23', 'booger', 'luck', 10, 6000);
-		} // buffsyy
+		} // buffs
 		var loadAll = function () {
 			fill(0xFFFFFFFF);
 			textAlign(CENTER, CENTER);
@@ -13705,57 +14328,106 @@ var programCode = function (processingInstance) {
 			}
 			if (load.images.length > 0) { // loads the images
 				load.images[0].load();
-				load.images[0].draw(width / 2 - load.images[0].width / 2, 340);
 				load.images.splice(0, 1);
 				text('Loading Images', 384, 272);
+				noFill();
+				stroke(0xFFFFFFFF);
+				strokeWeight(2);
+				rect(90, 290, width - 180, 40);
+				noStroke();
+				fill(0xFFFFFFFF);
 				rect(100, 300, (width - 200) - (width - 200) * (load.images.length / count.images), 20);
 			} else if (load.texts.length > 0) { // loads text
 				load.texts[0].load();
 				load.texts.splice(0, 1);
 				text('Loading Texts', 384, 272);
+				noFill();
+				stroke(0xFFFFFFFF);
+				strokeWeight(2);
+				rect(90, 290, width - 180, 40);
+				noStroke();
+				fill(0xFFFFFFFF);
 				rect(100, 300, (width - 200) - (width - 200) * (load.texts.length / count.texts), 20);
 			} else if (load.animations.length > 0) { // loads animations
 				load.animations[0].load();
-				if (load.animations[0].draw !== undefined) {
-					load.animations[0].draw(width / 2 - load.animations[0].width / 2, 340);
-				}
 				load.animations.splice(0, 1);
 				text('Loading Animations', 384, 272);
+				noFill();
+				stroke(0xFFFFFFFF);
+				strokeWeight(2);
+				rect(90, 290, width - 180, 40);
+				noStroke();
+				fill(0xFFFFFFFF);
 				rect(100, 300, (width - 200) - (width - 200) * (load.animations.length / count.animations), 20);
 			} else if (load.tiles.length > 0) { // loads tiles
 				load.tiles[0].load();
 				load.tiles.splice(0, 1);
 				text('Loading Tiles', 384, 272);
+				noFill();
+				stroke(0xFFFFFFFF);
+				strokeWeight(2);
+				rect(90, 290, width - 180, 40);
+				noStroke();
+				fill(0xFFFFFFFF);
 				rect(100, 300, (width - 200) - (width - 200) * (load.tiles.length / count.tiles), 20);
 			} else if (load.guis.length > 0) { // loads guis
 				load.guis[0].load();
 				load.guis.splice(0, 1);
 				text('Loading User Interface', 384, 272);
+				noFill();
+				stroke(0xFFFFFFFF);
+				strokeWeight(2);
+				rect(90, 290, width - 180, 40);
+				noStroke();
+				fill(0xFFFFFFFF);
 				rect(100, 300, (width - 200) - (width - 200) * (load.guis.length / count.guis), 20);
 			} else if (load.npcs.length > 0) { // loads npcs
 				load.npcs[0].load();
 				load.npcs.splice(0, 1);
 				text('Loading NPCs', 384, 272);
+				noFill();
+				stroke(0xFFFFFFFF);
+				strokeWeight(2);
+				rect(90, 290, width - 180, 40);
+				noStroke();
+				fill(0xFFFFFFFF);
 				rect(100, 300, (width - 200) - (width - 200) * (load.npcs.length / count.npcs), 20);
 			} else if (load.interiors.length > 0) { // loads interiors
 				load.interiors[0].load();
 				load.interiors.splice(0, 1);
 				text('Loading Rooms', 384, 272);
+				noFill();
+				stroke(0xFFFFFFFF);
+				strokeWeight(2);
+				rect(90, 290, width - 180, 40);
+				noStroke();
+				fill(0xFFFFFFFF);
 				rect(100, 300, (width - 200) - (width - 200) * (load.interiors.length / count.interiors), 20);
 			} else if (load.screens.length > 0) { // loads maps
 				load.screens[0].load();
 				load.screens.splice(0, 1);
 				text('Loading Maps', 384, 272);
+				noFill();
+				stroke(0xFFFFFFFF);
+				strokeWeight(2);
+				rect(90, 290, width - 180, 40);
+				noStroke();
+				fill(0xFFFFFFFF);
 				rect(100, 300, (width - 200) - (width - 200) * (load.screens.length / count.screens), 20);
 			} else {
 				if (saveFile.length > 0) {
 					Player.loadSave();
 				} else {
 					items['brown bag'].use();
-					items['orange sweats'].use();
+					items['worn boots'].use();
+					items['ragged leather jerkin'].use();
 					items['short brown hair'].use();
+					items['short brown beard'].use();
+					items['canvas pants'].use();
+					items['bread knife'].use();
 					abilities['slash'].learn();
-					abilities['lucky charms'].learn();
+					Player['loc']['x'] = 288;
+					Player['loc']['y'] = 256;
 				}
 				loaded = true;
 			}
@@ -13765,13 +14437,14 @@ var programCode = function (processingInstance) {
 			if (!loaded) {
 				loadAll();
 			} else {
+				cursor('none');
 				World.draw(Player['loc']['scene']['x'], Player['loc']['scene']['y'], Player['loc']['scene']['z']);
 				Player.movement();
 				World.topDraw(Player['loc']['scene']['x'], Player['loc']['scene']['y'], Player['loc']['scene']['z']);
-				Player.update();
 				Player['bar'].draw(0, height - REAL_SIZE);
 				Player['healthBar'].draw(0, 0, Player['stats']['curFortitude'], Player['stats']['fortitude'], Player['stats']['curEndurance'], Player['stats']['endurance'], Player['stats']['vitality'], Player['stats']['vigor'], Player['stats']['luck'], Player['stats']['strength'], Player['stats']['armor']);
 				Player['xpBar'].draw(0, 480);
+				Player.update();
 
 				noStroke();
 				colorMode(RGB);
