@@ -52,6 +52,7 @@ var programCode = function (processingInstance) {
 			interiors: [],
 			tiles: [],
 			guis: [],
+			quests: [],
 			npcs: []
 		}; // stores the unloaded assets
 		var count = {}; // counts how many items need to be loaded
@@ -280,6 +281,7 @@ var programCode = function (processingInstance) {
 		} // returns which of the number keys (1-5) is being pressed
 
 		var Player = {
+			'name': 'Daedalus',
 			'loc': {
 				'scene': {
 					'x': 0, // the x-coordinate of the scene the player is in
@@ -632,16 +634,6 @@ var programCode = function (processingInstance) {
 						}
 					} // if the cooldown is full and the player has enough energy
 				} // if there is an ability in the slot
-			}
-			var questKeys = Object.keys(Player['inventory']['quests']);
-			for (var i = 0; i < questKeys.length; i++) {
-				var q = questKeys[i];
-				if (this.name === quests[q].object) {
-					Player['inventory']['quests'][questKeys[i]]++;
-				}
-				if (Player['inventory']['quests'][questKeys[i]] >= quests[q].amount) {
-					quests[q].status = 'complete';
-				}
 			}
 			var popupKeys = Object.keys(popups);
 			for (var i = 0; i < popupKeys.length; i++) {
@@ -7550,12 +7542,12 @@ var programCode = function (processingInstance) {
 					'left': [[
 						'                ',
 						'                ',
-						'                ',
 						'      DDDD      ',
-						'     DEFFED     ',
-						'    CEEEFEDD    ',
-						'    CDCCEDED    ',
-						'    C   D DD    ',
+						'     DFFFFD     ',
+						'    DFEFFEFD    ',
+						'    DEDDEDFD    ',
+						'    C CCEDED    ',
+						'        D DD    ',
 						'          CC    ',
 						'         CC     ',
 						'                ',
@@ -7575,18 +7567,160 @@ var programCode = function (processingInstance) {
 					'right': [[
 						'                ',
 						'                ',
-						'                ',
 						'      DDDD      ',
-						'     DEFFED     ',
-						'    DDEFEEEC    ',
-						'    DEDECCDC    ',
-						'    DD D   C    ',
+						'     DFFFFD     ',
+						'    DFEFFEFD    ',
+						'    DFDEDDED    ',
+						'    DEDECC C    ',
+						'    DD D        ',
 						'    CC          ',
 						'     CC         ',
 						'                ',
 						'                ',
 						'                ',
 						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ']]
+				};
+				var keys = {
+					'C': this.a,
+					'D': this.b,
+					'E': this.c,
+					'F': this.d,
+					' ': ' '
+				};
+				var final = {
+					'up': [],
+					'down': [],
+					'left': [],
+					'right': []
+				};
+				var dir = Object.keys(def);
+				for (var j = 0; j < dir.length; j++) {
+					for (var i = 0; i < def[dir[j]].length; i++) {
+						final[dir[j]][i] = [];
+						for (var y = 0; y < def[dir[j]][i].length; y++) {
+							final[dir[j]][i][y] = '';
+							for (var x = 0; x < def[dir[j]][i][y].length; x++) {
+								var p = def[dir[j]][i][y][x];
+								final[dir[j]][i][y] += String(keys[p]);
+							}
+						}
+					}
+					new Animation(final[dir[j]], this.colors, this.speed, this.name + ' ' + dir[j]);
+				}
+				new AnimationSet(this.name + ' up', this.name + ' down', this.name + ' left', this.name + ' right', this.name)
+			};
+			var LongHairAnimation = function (a, b, c, d, colors, speed, name) {
+				this.a = a;
+				this.b = b;
+				this.c = c;
+				this.d = d;
+				this.colors = colors;
+				this.speed = speed;
+				this.name = name;
+				load.animations.push(this);
+			};
+			LongHairAnimation.prototype.load = function () {
+				var def = {
+					'up': [[
+						'                ',
+						'                ',
+						'      DDDD      ',
+						'     DEFFED     ',
+						'     DFFFFD     ',
+						'    DFEFEEED    ',
+						'    DEDEEDFD    ',
+						'    CEFEDEFC    ',
+						'    CEEFEFEC    ',
+						'    CDEFFEDC    ',
+						'    CDEFFEDC    ',
+						'     CDFEDC     ',
+						'     CDEDC      ',
+						'      CDDC      ',
+						'       CC       ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ']],
+					'down': [[
+						'                ',
+						'                ',
+						'      DDDD      ',
+						'     DEFFED     ',
+						'     DFFEFD     ',
+						'    DEDDDDED    ',
+						'    CDCC  CD    ',
+						'    CC     D    ',
+						'    C      C    ',
+						'    C      C    ',
+						'    DC    CD    ',
+						'    EDC  CD     ',
+						'     ED  D      ',
+						'     EE         ',
+						'      E         ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ']],
+					'left': [[
+						'                ',
+						'                ',
+						'      DDDD      ',
+						'     DFFFFD     ',
+						'    DFEFFEFD    ',
+						'    DEDDEDFD    ',
+						'    D CCDDED    ',
+						'       CC ED    ',
+						'        C EC    ',
+						'         EEC    ',
+						'        ED C    ',
+						'     C ED       ',
+						'       ED       ',
+						'        C       ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ',
+						'                ']],
+					'right': [[
+						'                ',
+						'                ',
+						'      DDDD      ',
+						'     DFFFFD     ',
+						'    DFEFFEFD    ',
+						'    DFDEDDED    ',
+						'    DEDDCC D    ',
+						'    DE CC       ',
+						'    CE C        ',
+						'    CEE         ',
+						'    C DE        ',
+						'       DE C     ',
+						'       DE       ',
+						'       C        ',
 						'                ',
 						'                ',
 						'                ',
@@ -7697,7 +7831,7 @@ var programCode = function (processingInstance) {
 						'                ',
 						'                ',
 						'         D      ',
-						'        ED      ',
+						'         D      ',
 						'    DE ED       ',
 						'      DDD       ',
 						'     CC         ',
@@ -7722,7 +7856,7 @@ var programCode = function (processingInstance) {
 						'                ',
 						'                ',
 						'      D         ',
-						'      DE        ',
+						'      D         ',
 						'       DE ED    ',
 						'       DDD      ',
 						'         CC     ',
@@ -8987,6 +9121,16 @@ var programCode = function (processingInstance) {
 						}
 					}
 				}
+				var questKeys = Object.keys(Player['inventory']['quests']);
+				for (var i = 0; i < questKeys.length; i++) {
+					var q = questKeys[i];
+					if (this.name === quests[q].object) {
+						Player['inventory']['quests'][questKeys[i]]++;
+					}
+					if (Player['inventory']['quests'][questKeys[i]] >= quests[q].amount) {
+						quests[q].status = 'complete';
+					}
+				}
 			};
 			Item.prototype.useable = function () {
 				return false;
@@ -9221,10 +9365,11 @@ var programCode = function (processingInstance) {
 				this.type = type;
 				this.object = object;
 				this.amount = amount;
-				this.details = new Text(details, 1, GUI_TEXT_COLOR);
-				this.completion = new Text(completion, 1, GUI_TEXT_COLOR);
+				this.details = details;
+				this.completion = completion;
 				this.status = "unaccepted";
 				quests[this.name] = this;
+				load.quests.push(this);
 				if (entities['quest'][this.giver].gives === undefined) {
 					entities['quest'][this.giver].gives = [];
 				}
@@ -9237,6 +9382,31 @@ var programCode = function (processingInstance) {
 					entities['interacting'][this.object].quests.push(this.name);
 				}
 			};
+			Quest.prototype.load = function () {
+				this.details = this.details.replace(/%/g, Player['name']);
+				for (var i = 0; i < this.details.length; i++) {
+					if (i % 40 === 0 && i !== 0) {
+						var j = 0;
+						while (this.details[i + j] !== ' ' && this.details.length > i + j) {
+							j++;
+						}
+						this.details = this.details.slice(0, i + j) + '\n' + this.details.slice(i + j + 1, this.details.length);
+					}
+				}
+				this.details = new Text(this.details, 1, GUI_TEXT_COLOR);
+
+				this.completion = this.completion.replace(/%/g, Player['name']);
+				for (var i = 0; i < this.completion.length; i++) {
+					if (i % 40 === 0 && i !== 0) {
+						var j = 0;
+						while (this.completion[i + j] !== ' ' && this.completion.length > i + j) {
+							j++;
+						}
+						this.completion = this.completion.slice(0, i + j) + '\n' + this.completion.slice(i + j + 1, this.completion.length);
+					}
+				}
+				this.completion = new Text(this.completion, 1, GUI_TEXT_COLOR);
+			}
 			Quest.prototype.accept = function () {
 				this.status = "accepted";
 				for (var i = 1; i < 6; i++) {
@@ -11841,6 +12011,25 @@ var programCode = function (processingInstance) {
 		} // gui tile images
 		{
 			new Image([
+				'                ',
+				'                ',
+				'   ‡            ',
+				'   †‡           ',
+				'    †‡          ',
+				'     †‡         ',
+				'      †‡        ',
+				'     f †f       ',
+				'    CffCceC     ',
+				'   CCfecC†‡C    ',
+				'    CCeeeCC     ',
+				'      CCC       ',
+				'                ',
+				'                ',
+				'                ',
+				'                '], pal, 2, 'sharp axe interacting');
+		} // interacting images
+		{
+			new Image([
 				'    ',
 				'    ',
 				'    ',
@@ -12773,6 +12962,125 @@ var programCode = function (processingInstance) {
 				'  [[[[[[[[[[[[  ',
 				'                ',
 				'                '], pal, 2, 'lumberjack flannel');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[qqpqpq[[[  ',
+				'  [[[poopop[[[  ',
+				'  [[[ooonoo[[[  ',
+				'  [[[ponmop[[[  ',
+				'  [[[pommno[[[  ',
+				'  [[[onm[oo[[[  ',
+				'  [[[on[[no[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'blue jeans');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[ˆˆˆ‡[[[  ',
+				'  [[[[ˆˆ‡‡††[[  ',
+				'  [[[ˆˆˆ†……[[[  ',
+				'  [[[ˆˆ‡‡†[[[[  ',
+				'  [[ˆ‡‡††‡[[[[  ',
+				'  [[‡ˆ†‡[†[[[[  ',
+				'  [[†‡†‡[[[[[[  ',
+				'  [[†‡†‡†[[[[[  ',
+				'  [[[†††[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'thick leather gloves');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[‡[[  ',
+				'  [[[[[[[[f†[[  ',
+				'  [[[[[[[de[f[  ',
+				'  [[[[[[‡†[ff[  ',
+				'  [[[[[‡†[cef[  ',
+				'  [[[[‡†[eee[[  ',
+				'  [[[‡†[[[[[[[  ',
+				'  [[‡†[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'sharp axe');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[v{[[{v[[[  ',
+				'  [[vvzu{zvv[[  ',
+				'  [[vuz{uzuv[[  ',
+				'  [vvyzzzzyvv[  ',
+				'  [vuyyzzyyuv[  ',
+				'  [vu[[[[[[uv[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'blue dress with apron');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[zzzz[[[[  ',
+				'  [[[[{{z{[[[[  ',
+				'  [[[{{{{{{[[[  ',
+				'  [[[{z{z{z[[[  ',
+				'  [[[{z{zzz[[[  ',
+				'  [[z{yzyz{z[[  ',
+				'  [[yzyyyzyz[[  ',
+				'  [[yyyyyyyy[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'white skirt');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[‰‰ˆ[[[  ',
+				'  [[[[[‰ˆˆ‰ˆ[[  ',
+				'  [[[[‰ˆˆ‰ˆ‡[[  ',
+				'  [[[‰ˆˆ‰‰ˆ‡[[  ',
+				'  [[‰ŒŒ‰‰ˆ‡[[[  ',
+				'  [[ŒŒˆ‡[[[[  ',
+				'  [[Œ‡[[[[[  ',
+				'  [[ŒŒŒ[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'stale bread');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[?[[[[[[[[  ',
+				'  [[>?[[[[[[[[  ',
+				'  [[=[[[[[[[[[  ',
+				'  [[=>[[[[[[[[  ',
+				'  [[[=[[[[[[[[  ',
+				'  [[[=>[>??[[[  ',
+				'  [[[[===[=?[[  ',
+				'  [[[[[[[[[=[[  ',
+				'  [[[[[[[[[[?[  ',
+				'  [[[[[[[[[[>[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'frayed clothesline');
 		} // item images
 		{
 			var armorAnimation = 0.45;
@@ -14048,7 +14356,7 @@ var programCode = function (processingInstance) {
 					'   988:&%:889   ',
 					'   7((8(#8((7   ',
 					'  7:88:8%:88:7  ',
-					'  &8&&8&&8&  ',
+					'  &8&&8&#8&&8&  ',
 					'  &  &8&%8&  &  ',
 					'                ',
 					'                ',
@@ -14082,17 +14390,84 @@ var programCode = function (processingInstance) {
 					'                ',
 					'                ',
 					'                '], pal, armorAnimation, 'lumberjack flannel animation');
+				new ShirtAnimation([
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'    vy    yv    ',
+					'   vw{yyvy{wv   ',
+					'   vw{{vy{{wv   ',
+					'  vww{{yv{{wwv  ',
+					'  vvuy{{{{yuvv  ',
+					'  u  y{{{{y  u  ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                '], [
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'    vy    yv    ',
+					'   vw{yyyy{wv   ',
+					'   vw{{{y{{wv   ',
+					'  vww{{{{{{wwv  ',
+					'  vvuy{{{{yuvv  ',
+					'  u  y{{y{y  u  ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                '], pal, armorAnimation, 'blue farm dress top animation');
+				new PantsAnimation('x', 'y', 'z', '{', pal, armorAnimation, 'white skirt animation');
+				new BeltAnimation('=', '>', '?', pal, armorAnimation, 'frayed clothesline animation');
 			} // shirt animations
 			{
-				new ShortHairAnimation('„', '…', '†', '‡', pal, armorAnimation, 'short brown hair animation');
-				new ShortBeardAnimation('„', '…', '†', pal, armorAnimation, 'short brown beard animation');
+				var hairs = {
+					'brown': ['„', '…', '†', '‡'],
+					'red': ['5', '6', '7', '8'],
+					'blond': [';', '<', '=', '>'],
+					'black': [']', '^', '_', '`'],
+					'white': ['e', 'f', 'g', 'h']
+				};
+				var hairKeys = Object.keys(hairs);
+				for (var i = 0; i < hairKeys.length; i++) {
+					var col = hairs[hairKeys[i]];
+					new ShortHairAnimation(col[0], col[1], col[2], col[3], pal, armorAnimation, 'short ' + hairKeys[i] + ' hair animation');
+					new ShortHairAnimation(col[0], col[1], col[2], col[3], pal, armorAnimation, 'long ' + hairKeys[i] + ' hair animation');
+					new ShortBeardAnimation(col[0], col[1], col[2], pal, armorAnimation, 'short ' + hairKeys[i] + ' beard animation');
+				}
 			} // hair animations
 			{
 				new BootsAnimation('‡', 'ˆ', '‰', pal, armorAnimation, 'brown boots animation');
-			} // boot animations
+			} // boots animations
 			{
 				new PantsAnimation('.', '1', '2', '2', pal, armorAnimation, 'canvas pants animation');
+				new PantsAnimation('m', 'n', 'o', 'p', pal, armorAnimation, 'blue jeans animation');
 			} // pants animations
+			{
+				new GlovesAnimation('„', '…', '†', pal, armorAnimation, 'thick leather gloves animation');
+			} // gloves animations
 		} // animations
 		{
 			new Enemy('slime', 'slime', 1, 4, 2, 100, 100, 1, 3, 4, 0, 4, { 'booger': 100, 'skull': 50 }, true);
@@ -14180,17 +14555,30 @@ var programCode = function (processingInstance) {
 			} // boots
 			{
 				new Armor('ragged leather jerkin', 'ragged leather jerkin', 24, 4, 'chest', 'ragged leather jerkin animation', { 'armor': 6 });
-				new Armor('lumberjack flannel', 'lumberjack flannel', 45, 8, 'chest', 'lumber jack flannel animation', { 'armor': 10, 'strength': 2 });
+				new Armor('lumberjack flannel', 'lumberjack flannel', 45, 8, 'chest', 'lumberjack flannel animation', { 'armor': 10, 'strength': 2 });
+				new Armor('blue farm dress top', 'blue farm dress top', 18, 3, 'chest', 'blue farm dress top animation', { 'armor': 4 });
+				new Armor('white skirt', 'white skirt', 15, 3, 'legs', 'white skirt animation', { 'armor': 3 });
 			} // shirts
 			{
 				new BagItem('brown bag', 'brown bag', 103, 32, 8);
-			} // boots
+			} // bags
 			{
 				new Armor('canvas pants', 'canvas pants', 18, 3, 'legs', 'canvas pants animation', { 'armor': 4 });
+				new Armor('blue jeans', 'blue jeans', 24, 4, 'legs', 'blue jeans animation', { 'armor': 6 });
 			} // pants
+			{
+				new Armor('thick leather gloves', 'thick leather gloves', 20, 3, 'hands', 'thick leather gloves animation', { 'armor': 2 });
+			} // gloves
+			{
+				new Armor('frayed clothesline', 'frayed clothesline', 17, 3, 'waist', 'frayed clothesline animation', {'armor': 3});
+			} // belts
 			{
 				new Armor('bread knife', 'bread knife', 30, 5, 'mainhand', 'nothing', { 'weapon damage': 10 });
 			} // weapons
+			{
+				new Food('stale bread', 'stale bread', 8, 2, 15);
+			} // food
+			new Item('sharp axe', 'sharp axe', 36, 6);
 		} // items
 		{
 			new Screen(0, 0, 0, [
@@ -14209,7 +14597,12 @@ var programCode = function (processingInstance) {
 				'!%!#!!EEE!!!(!E%%!EE$E%&',
 				'!(!!!!!E!!!!!!!!%#!EE!%!',
 				'!!!!%!%&!(!!!E!!!!!&!!!!',
-				'!!!!!!&!!!!!!!!!!!&%!!!!']);
+				'!!!!!!&!!!!!!!!!!!&%!!!!'],
+				{
+					'quest': [
+						{ 'name': 'James Sliver', 'x': 13, 'y': 7 }
+					]
+				});
 			new Screen(1, 0, 0, [
 				'$$$$$$$$$$$$$$$$$$$$$$$$',
 				'$$$$$$$$$$$$$$$$$($$$$$$',
@@ -14260,7 +14653,12 @@ var programCode = function (processingInstance) {
 				'$$(($#!!&%&!!!$!!!!!$$$$',
 				'($$$$$$!!!$!!#$$$!!!!$$$',
 				'$$$$$$($$$$$$$$($$!%!$$$',
-				'$$$$$$$$$$$($$$$$$$!!!$$']);
+				'$$$$$$$$$$$($$$$$$$!!!$$'],
+				{
+					'interacting': [
+						{ 'name': 'sharp axe', 'x': 6, 'y': 10 }
+					]
+				});
 			new Screen(0, 1, 0, [
 				'!!!!!!!!!!!!!!!!!!!!!!!!',
 				'!!!!E!!&%!EE!!&!!E!!!!!!',
@@ -14295,18 +14693,56 @@ var programCode = function (processingInstance) {
 				'($!!!$$$$$$($$$$$$$$$$$$',
 				'$$$$$$$$$$$$$$$$$$$($$$$',
 				'$$$$($$$($$$$($$($$$$$$$']);
-
+			new Interior(0, 0, 0, 9, 6, 11, 9, 11, 10, [
+				'                        ',
+				'                        ',
+				'                        ',
+				'                        ',
+				'                        ',
+				'      <888888=          ',
+				'      :777DCD;          ',
+				'      :777777;          ',
+				'      :777777;          ',
+				'      :7A77A7;          ',
+				'      >9B99@9?          ',
+				'                        ',
+				'                        ',
+				'                        ',
+				'                        ',
+				'                        '], {
+				'quest': [
+					{ 'name': 'Matilda Sliver', 'x': 12, 'y': 7 }
+				]
+			});
 		} // maps
 		{
 			new Ability('slash', 'damage', 'slash', 'humanUp', 20, 10, 3);
 		} // abilities
 		{
-
+			new Npc('James Sliver', 'quest', 'humanAnimation', {
+				'hair': 'short brown hair',
+				'face': 'short brown beard',
+				'chest': 'lumberjack flannel',
+				'legs': 'blue jeans',
+				'feet': 'worn boots'
+			});
+			new Npc('Matilda Sliver', 'quest', 'humanAnimation', {
+				'hair': 'long black hair',
+				'chest': 'blue farm dress top',
+				'legs': 'white skirt',
+				'feet': 'worn boots'
+			});
 		} // npcs
 		{
+			new Interacting('sharp axe', 'sharp axe interacting', 'loot', { 'sharp axe': 100 }, false);
 		} // interactings
 		{
-
+			new Quest('The Lost Axe', 'James Sliver', 'James Sliver', 'nothing', { 'thick leather gloves': 1 }, 25, 10, 'gather', 'sharp axe', 1,
+				'Be careful %, there have been some strange things in the forest of late. The other day I was gathering wood, and was set upon by vicious monster! I was so frightened, I dropped my axe. You look like a brave fellow! Perhaps you could recover it for me. Go southeast, you should find it lying somewhere in the forest.',
+				'Thank you %, take these gloves as a token of my gratitude! May they serve you well in future endeavours.');
+			new Quest('Pesky Rats', 'Matilda Sliver', 'Matilda Sliver', 'nothing', { 'frayed clothesline': 1, 'stale bread': 5 }, 25, 5, 'kill', 'rat', 3,
+				'Oh we\'ll be eaten out of house and home! When my husband isn\'t emptying our larder, the rats are. %, please go and exterminate the pesky vermin. I cannot convince James that chopping rats is as necessary as chopping wood',
+				'Thank you for your serfice %! Take these, if it wasn\'t for you they would have no doubt ended up in the stomach of a rodent.');
 		} // quests
 		{
 		} // buffs
@@ -14320,6 +14756,7 @@ var programCode = function (processingInstance) {
 					texts: load.texts.length,
 					animations: load.animations.length,
 					tiles: load.tiles.length,
+					quests: load.quests.length,
 					guis: load.guis.length,
 					npcs: load.npcs.length,
 					interiors: load.interiors.length,
@@ -14381,6 +14818,17 @@ var programCode = function (processingInstance) {
 				noStroke();
 				fill(0xFFFFFFFF);
 				rect(100, 300, (width - 200) - (width - 200) * (load.guis.length / count.guis), 20);
+			} else if (load.quests.length > 0) { // loads guis
+				load.quests[0].load();
+				load.quests.splice(0, 1);
+				text('Loading Quests', 384, 272);
+				noFill();
+				stroke(0xFFFFFFFF);
+				strokeWeight(2);
+				rect(90, 290, width - 180, 40);
+				noStroke();
+				fill(0xFFFFFFFF);
+				rect(100, 300, (width - 200) - (width - 200) * (load.quests.length / count.quests), 20);
 			} else if (load.npcs.length > 0) { // loads npcs
 				load.npcs[0].load();
 				load.npcs.splice(0, 1);
@@ -14422,7 +14870,7 @@ var programCode = function (processingInstance) {
 					items['worn boots'].use();
 					items['ragged leather jerkin'].use();
 					items['short brown hair'].use();
-					items['short brown beard'].use();
+					//items['short brown beard'].use();
 					items['canvas pants'].use();
 					items['bread knife'].use();
 					abilities['slash'].learn();
@@ -14434,7 +14882,7 @@ var programCode = function (processingInstance) {
 		};
 		draw = function () {
 			background(0xFF000000);
-			if (!loaded) {
+			if (!loaded && width === 768) {
 				loadAll();
 			} else {
 				cursor('none');
