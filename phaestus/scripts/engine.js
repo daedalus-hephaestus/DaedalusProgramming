@@ -19,7 +19,7 @@ var programCode = function (processingInstance) {
 		}; // stores the key controls 
 
 		var loaded = false; // whether or not the assets are loaded
-		var collisionBoxes = false; // shows tile collision boxes if true
+		var collisionBoxes = true; // shows tile collision boxes if true
 		var keys = []; // stores the keys being pressed
 		var mouseIsPressed = false; // if mouse is being pressed
 		var keyIsPressed = true; // if a key is being pressed
@@ -399,7 +399,8 @@ var programCode = function (processingInstance) {
 					'interacting': false,
 					'vendor': false
 				},
-				'cursor': 'default'
+				'cursor': 'default',
+				'removeInteracting': false
 			},
 			'buffs': {
 
@@ -436,8 +437,8 @@ var programCode = function (processingInstance) {
 		}; // stores information about the player
 		Player.update = function () {
 			Player['colBox'] = {
-				'x': (Player['loc']['x'] + Player['size']['colX'] * PIXEL_SIZE),
-				'y': (Player['loc']['y'] + Player['size']['colY'] * PIXEL_SIZE),
+				'x': (round(Player['loc']['x']/PIXEL_SIZE)*PIXEL_SIZE + Player['size']['colX'] * PIXEL_SIZE),
+				'y': (round(Player['loc']['y']/PIXEL_SIZE)*PIXEL_SIZE + Player['size']['colY'] * PIXEL_SIZE),
 				'xSize': Player['size']['colXSize'] * PIXEL_SIZE,
 				'ySize': Player['size']['colYSize'] * PIXEL_SIZE,
 			}; // calculates the players collision box so that it is consistent with x and y location
@@ -513,7 +514,11 @@ var programCode = function (processingInstance) {
 			} // closes all guis when "q" is pressed
 			// detects if the player is looting something
 			if (Player['actions']['guis']['looting'] !== false) {
-				Player['lootbox'].draw(320, 224, Player['actions']['guis']['looting']); // opens the loot pane
+				if (Player['actions']['guis']['looting'].length === 0) {
+					Player['actions']['guis']['looting'] = false;
+				} else {
+					Player['lootbox'].draw(320, 224, Player['actions']['guis']['looting']); // opens the loot pane
+				}
 			}
 
 			// increments all of the cooldowns
@@ -8594,6 +8599,7 @@ var programCode = function (processingInstance) {
 							if (mouseIsPressed && newClick) {
 								newClick = false;
 								Player['actions']['guis']['looting'] = false;
+								Player['actions']['removeInteracting'] = false;
 							}
 						} // detects if a close button is clicked
 						if (t.tile.type === 'slot') {
@@ -9040,6 +9046,9 @@ var programCode = function (processingInstance) {
 								for (var i = 0; i < q.length; i++) {
 									if (this.name === quests[q[i]].object && Player['inventory']['quests'][q[i]] < quests[q[i]].amount) {
 										Player['inventory']['quests'][q[i]]++;
+										if (Player['inventory']['quests'][q[i]] === quests[q[i]].amount) {
+											quests[q[i]].status = 'complete';
+										}
 									}
 								}
 								var xpGen = round(entity.level * 5 + random(0, entity.level * 4));
@@ -9079,6 +9088,8 @@ var programCode = function (processingInstance) {
 				this.p.image(images[images[this.animationSet]['down']]['a'][0]);
 				var tempKeys = Object.keys(this.equipment);
 				for (var i = 0; i < tempKeys.length; i++) {
+					console.log(tempKeys[i]);
+					console.log(items[tempKeys[i]]);
 					var anim = images[images[items[this.equipment[tempKeys[i]]].animationSet].down].a[0];
 					this.p.image(anim);
 				}
@@ -10098,7 +10109,7 @@ var programCode = function (processingInstance) {
 											}
 										} else {
 											e.entity.use();
-											e.alive = false;
+											Player['actions']['removeInteracting'] = i;
 										}
 									} else {
 										new Popup('I need to get closer', GUI_TEXT_COLOR, Player['loc']['x'] - REAL_SIZE, Player['loc']['y'], 'interactingDistance');
@@ -10107,6 +10118,10 @@ var programCode = function (processingInstance) {
 							}
 						}
 					}
+				}
+				if (Player['actions']['removeInteracting'] !== false && !Player['actions']['guis']['looting']) {
+					selMap.storedEntities[Player['actions']['removeInteracting']].alive = false;
+					Player['actions']['removeInteracting'] = false;
 				}
 				for (var i = 0; i < selMap.storedEntities.length; i++) {
 					var e = selMap.storedEntities[i];
@@ -10130,6 +10145,7 @@ var programCode = function (processingInstance) {
 				if (type === 'enter') {
 					World.transition.destination = function () {
 						var tile = World.maps[Player['loc']['scene']['x']][Player['loc']['scene']['y']][Player['loc']['scene']['z']].tiles[value];
+						tile.interior.reset();
 						Player['loc']['sub'] = tile.interior;
 						Player['loc']['wx'] = Player['loc']['x'];
 						Player['loc']['wy'] = Player['loc']['y'];
@@ -10155,7 +10171,9 @@ var programCode = function (processingInstance) {
 				buffs[this.name] = this;
 			};
 			Buff.prototype.give = function () {
-				Player['stats'][this.stat] += this.amount;
+				if(Player['buffs'][this.name] === undefined) {
+					Player['stats'][this.stat] += this.amount;
+				}
 				Player['buffs'][this.name] = this.duration * FRAME_RATE;
 			};
 			Buff.prototype.remove = function () {
@@ -10178,7 +10196,7 @@ var programCode = function (processingInstance) {
 					} else {
 						message += ' increased\nby ';
 					}
-					message += this.amount + '\n' + floor(buffTime / FRAME_RATE) + 's remaining';
+					message += abs(this.amount) + '\n' + floor(buffTime / FRAME_RATE) + 's remaining';
 					createAlert(x + REAL_SIZE, y, message, this.name + 'Buff');
 				}
 			};
@@ -10387,6 +10405,31 @@ var programCode = function (processingInstance) {
 				'‡  ||||||||||||||||……††……|||||| ',
 				'|||||          ||||||……|||||    ',
 				'                    ||||        '], pal, 2, 'cart');
+			new Image([
+				'       ……       ',
+				'      …‰ˆ…      ',
+				'    ……ˆ‰ˆˆ……    ',
+				'  ……‡ˆ‡ˆ‰‡ˆ‡……  ',
+				'……†ˆ‡ˆ‰ˆ‰‰ˆ‡ˆ†……',
+				'…‡†‡ˆˆ‡‰ˆ‡ˆˆ‡†‡…',
+				'…‡‡ˆ‡ˆ‡……‡ˆ†‡‡‡…',
+				'…‡†‡†‡…„„…‡†‡†‡…',
+				'…‡††……„  „……††‡…',
+				'…†……„„````„„……†…',
+				'……„„``bcb`c`„„……',
+				'…„…`c``````cb…„…',
+				' …†``^^^^^^``†… ',
+				' …†`^^]]]]^^`†… ',
+				' …†`]][[[[]]`†… ',
+				' …†``[[[[[[``†… ',
+				' _``c``````cc`_ ',
+				'C`c``cdd`cc``c`C',
+				'C_cc```````ccb`C',
+				'C^bcb`bccc`acb^C',
+				'C^ab`bccccb`aa^C',
+				'CC^a`abbbba`^^CC',
+				'CCC^^^aaaa^^^CCC',
+				' CCCC^^^^^^CCCC '], pal, 2, 'well');
 			{
 				new Image([
 					'      ----      ',
@@ -11041,6 +11084,325 @@ var programCode = function (processingInstance) {
 					' …„‡†„„„„„„†‡„… ',
 					' …„†…„„„„„„…†„… ',
 					'  …„„…„„„„…„„…  '], pal, 2, 'stool');
+				new Image([
+					' #$%&&((((((((((',
+					' #$%&&((((((((((',
+					' #$%&&&&((((((((',
+					' #$%&&&&&&&&&&&&',
+					' #$%%&&&&&&&&&&&',
+					' #$%%%%%%%%%%%%%',
+					' #$‡‡‡‡‡‡‡‡‡‡‡‡‡',
+					' #‡ˆˆˆˆˆˆˆˆˆˆˆˆˆ',
+					' …ˆ‡††‡††‡††‡††‡',
+					' …‡†$$†$$†$$†$$†',
+					' …‡…##…##…##…##…',
+					' …†…………………………………',
+					' …†……„„„„„„„„„„„',
+					' „……„„„„„„„„„„„„',
+					' …„„„„…………………………',
+					'  ……………………………………'], pal, 2, 'bed bottom left');
+				new Image([
+					'((((((((((&&%$# ',
+					'((((((((((&&%$# ',
+					'((((((((&&&&%$# ',
+					'&&&&&&&&&&&&%$# ',
+					'&&&&&&&&&&&%%$# ',
+					'%%%%%%%%%%%%%$# ',
+					'‡‡‡‡‡‡‡‡‡‡‡‡‡$# ',
+					'ˆˆˆˆˆˆˆˆˆˆˆˆˆ‡# ',
+					'‡††‡††‡††‡††‡ˆ… ',
+					'†$$†$$†$$†$$†‡… ',
+					'…##…##…##…##…‡… ',
+					'…………………………………†… ',
+					'„„„„„„„„„„„……†… ',
+					'„„„„„„„„„„„„……„ ',
+					'…………………………„„„„… ',
+					'……………………………………  '], pal, 2, 'bed bottom right');
+				new Image([
+					'   ‡‡‡‡‡‡‡‡‡‡‡‡‡',
+					'  ‡ˆˆˆˆˆˆˆˆˆˆˆˆˆ',
+					' …ˆ‡††‡††‡††‡††‡',
+					' …‡†  †  †  †  †',
+					' …‡…  …  …  …  …',
+					' …†…………………………………',
+					' …†…$%%%%%%%%%%%',
+					' „…$%%&&&&&&&&&&',
+					' …$%%&&&&&&&&&&&',
+					' …$%&&&&&&&(((((',
+					' #$%&&&(((((((((',
+					' #$%&&((((((((((',
+					' #$%&&((((()))))',
+					' #$%&&((()))))))',
+					' #$%&&((()))))))',
+					' #$%&&((()))))))',
+					' #$%&&((()))((((',
+					' #$%&&((((((((((',
+					' #$%&&((((((((((',
+					' #$%&&((((()))))',
+					' #$%&&((()))))))',
+					' #$%&&((()))))))',
+					' #$%&&((()))))))',
+					' #$%&&((()))(((('], pal, 2, 'bed top left');
+				new Image([
+					'‡‡‡‡‡‡‡‡‡‡‡‡‡   ',
+					'ˆˆˆˆˆˆˆˆˆˆˆˆˆ‡  ',
+					'‡††‡††‡††‡††‡ˆ… ',
+					'†  †  †  †  †‡… ',
+					'…  …  …  …  …‡… ',
+					'…………………………………†… ',
+					'%%%%%%%%%%%$…†… ',
+					'&&&&&&&&&&%%$…„ ',
+					'&&&&&&&&&&&%%$… ',
+					'(((((&&&&&&&%$… ',
+					'(((((((((&&&%$# ',
+					'((((((((((&&%$# ',
+					')))))(((((&&%$# ',
+					')))))))(((&&%$# ',
+					')))))))(((&&%$# ',
+					')))))))(((&&%$# ',
+					'(((()))(((&&%$# ',
+					'((((((((((&&%$# ',
+					'((((((((((&&%$# ',
+					')))))(((((&&%$# ',
+					')))))))(((&&%$# ',
+					')))))))(((&&%$# ',
+					')))))))(((&&%$# ',
+					'(((()))(((&&%$# '], pal, 2, 'bed top right');
+				new Image([
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'     ………………     ',
+					'   ……ˆˆˆˆˆˆ……   ',
+					'  …ˆˆˆ‰‰ˆ‰ˆˆˆ…  ',
+					' …††‡†‡‡‡‡‡‡††… ',
+					' …ˆˆˆ‰‰‰ˆˆˆ‰‰ˆ… ',
+					'…†ˆ‰ˆˆˆ‰‰‰‰‰ˆˆ†…',
+					'…†††‡‡‡‡‡††‡†††…',
+					'…ˆ†ˆˆˆ‰ˆ‰‰ˆˆˆ†ˆ…',
+					'…‡†††ˆˆˆˆˆˆ†††‡…',
+					'…‡†ˆˆ††††††ˆˆ†‡…',
+					'…‡†ˆ‡†ˆˆˆˆ†ˆ‡†‡…',
+					'„†…‡‡†ˆ‡‡‡†‡‡…†„',
+					'„†…†‡†‡‡‡‡…‡†…†„',
+					'…„…†‡…†‡‡†…†‡…„…',
+					'…„…††…‡†‡†…††…„…',
+					' …„††…††††…††„… ',
+					' ……„„…††††…„„…… ',
+					'   ……„„„„„„……   ',
+					'     ………………     '], pal, 2, 'barrel');
+				new Animation([
+					[
+						'      ^^^^      ',
+						'    ^^aaaa^^    ',
+						'   ^^``aa``^^   ',
+						'    ^^^``^^^    ',
+						'    ^``^^``^    ',
+						'   ^^^aaaa`^    ',
+						' ^^ab^:]]]a^    ',
+						' ^abb^9:]9a^    ',
+						' ^`ab^7898`^    ',
+						' ^`a^^6666`^^   ',
+						' ^^[[^^a`^^[[   ',
+						'    [[[^^[[[    ',
+						' … …[[[[[[[[…   ',
+						' ……[[„„[[„„[[…  ',
+						'  …[[……„„……[[…  ',
+						'   …………………………   '],
+					[
+						'      ^^^^      ',
+						'    ^^aaaa^^    ',
+						'   ^^``aa``^^   ',
+						'    ^^^``^^^    ',
+						'    ^``^^``^    ',
+						'   ^^^aaaa`^    ',
+						' ^^ab^]]]]a^    ',
+						' ^abb^9]]]a^    ',
+						' ^`ab^78]8`^    ',
+						' ^`a^^6666`^^   ',
+						' ^^[[^^a`^^[[   ',
+						'    [[[^^[[[    ',
+						' … …[[[[[[[[…   ',
+						' ……[[„„[[„„[[…  ',
+						'  …[[……„„……[[…  ',
+						'   …………………………   '],
+					[
+						'      ^^^^      ',
+						'    ^^aaaa^^    ',
+						'   ^^``aa``^^   ',
+						'    ^^^``^^^    ',
+						'    ^``^^``^    ',
+						'   ^^^aaaa`^    ',
+						' ^^ab^]]]]a^    ',
+						' ^abb^]]]]a^    ',
+						' ^`ab^7]]]`^    ',
+						' ^`a^^66]6`^^   ',
+						' ^^[[^^a`^^[[   ',
+						'    [[[^^[[[    ',
+						' … …[[[[[[[[…   ',
+						' ……[[„„[[„„[[…  ',
+						'  …[[……„„……[[…  ',
+						'   …………………………   '],
+					[
+						'      ^^^^      ',
+						'    ^^aaaa^^    ',
+						'   ^^``aa``^^   ',
+						'    ^^^``^^^    ',
+						'    ^``^^``^    ',
+						'   ^^^aaaa`^    ',
+						' ^^ab^]]]]a^    ',
+						' ^abb^]]]]a^    ',
+						' ^`ab^767]`^    ',
+						' ^`a^^66]6`^^   ',
+						' ^^[[^^a`^^[[   ',
+						'    [[[^^[[[    ',
+						' … …[[[[[[[[…   ',
+						' ……[[„„[[„„[[…  ',
+						'  …[[……„„……[[…  ',
+						'   …………………………   '],
+					[
+						'      ^^^^      ',
+						'    ^^aaaa^^    ',
+						'   ^^``aa``^^   ',
+						'    ^^^``^^^    ',
+						'    ^``^^``^    ',
+						'   ^^^aaaa`^    ',
+						' ^^ab^]]]]a^    ',
+						' ^abb^8]8]a^    ',
+						' ^`ab^767]`^    ',
+						' ^`a^^66]6`^^   ',
+						' ^^[[^^a`^^[[   ',
+						'    [[[^^[[[    ',
+						' … …[[[[[[[[…   ',
+						' ……[[„„[[„„[[…  ',
+						'  …[[……„„……[[…  ',
+						'   …………………………   '],
+					[
+						'      ^^^^      ',
+						'    ^^aaaa^^    ',
+						'   ^^``aa``^^   ',
+						'    ^^^``^^^    ',
+						'    ^``^^``^    ',
+						'   ^^^aaaa`^    ',
+						' ^^ab^8]]8a^    ',
+						' ^abb^8]8]a^    ',
+						' ^`ab^767]`^    ',
+						' ^`a^^6676`^^   ',
+						' ^^[[^^a`^^[[   ',
+						'    [[[^^[[[    ',
+						' … …[[[[[[[[…   ',
+						' ……[[„„[[„„[[…  ',
+						'  …[[……„„……[[…  ',
+						'   …………………………   '],
+					[
+						'      ^^^^      ',
+						'    ^^aaaa^^    ',
+						'   ^^``aa``^^   ',
+						'    ^^^``^^^    ',
+						'    ^``^^``^    ',
+						'   ^^^aaaa`^    ',
+						' ^^ab^]]]]a^    ',
+						' ^abb^]]8]a^    ',
+						' ^`ab^]67]`^    ',
+						' ^`a^^6666`^^   ',
+						' ^^[[^^a`^^[[   ',
+						'    [[[^^[[[    ',
+						' … …[[[[[[[[…   ',
+						' ……[[„„[[„„[[…  ',
+						'  …[[……„„……[[…  ',
+						'   …………………………   '],
+					[
+						'      ^^^^      ',
+						'    ^^aaaa^^    ',
+						'   ^^``aa``^^   ',
+						'    ^^^``^^^    ',
+						'    ^``^^``^    ',
+						'   ^^^aaaa`^    ',
+						' ^^ab^]]]]a^    ',
+						' ^abb^]]]]a^    ',
+						' ^`ab^]7]]`^    ',
+						' ^`a^^6776`^^   ',
+						' ^^[[^^a`^^[[   ',
+						'    [[[^^[[[    ',
+						' … …[[[[[[[[…   ',
+						' ……[[„„[[„„[[…  ',
+						'  …[[……„„……[[…  ',
+						'   …………………………   '],
+					[
+
+						'      ^^^^      ',
+						'    ^^aaaa^^    ',
+						'   ^^``aa``^^   ',
+						'    ^^^``^^^    ',
+						'    ^``^^``^    ',
+						'   ^^^aaaa`^    ',
+						' ^^ab^]]]]a^    ',
+						' ^abb^]]]]a^    ',
+						' ^`ab^]]]]`^    ',
+						' ^`a^^6]66`^^   ',
+						' ^^[[^^a`^^[[   ',
+						'    [[[^^[[[    ',
+						' … …[[[[[[[[…   ',
+						' ……[[„„[[„„[[…  ',
+						'  …[[……„„……[[…  ',
+						'   …………………………   '],
+					[
+
+						'      ^^^^      ',
+						'    ^^aaaa^^    ',
+						'   ^^``aa``^^   ',
+						'    ^^^``^^^    ',
+						'    ^``^^``^    ',
+						'   ^^^aaaa`^    ',
+						' ^^ab^]]]]a^    ',
+						' ^abb^]]]]a^    ',
+						' ^`ab^77]]`^    ',
+						' ^`a^^6766`^^   ',
+						' ^^[[^^a`^^[[   ',
+						'    [[[^^[[[    ',
+						' … …[[[[[[[[…   ',
+						' ……[[„„[[„„[[…  ',
+						'  …[[……„„……[[…  ',
+						'   …………………………   '],
+					[
+
+						'      ^^^^      ',
+						'    ^^aaaa^^    ',
+						'   ^^``aa``^^   ',
+						'    ^^^``^^^    ',
+						'    ^``^^``^    ',
+						'   ^^^aaaa`^    ',
+						' ^^ab^]]8]a^    ',
+						' ^abb^]8]]a^    ',
+						' ^`ab^778]`^    ',
+						' ^`a^^6766`^^   ',
+						' ^^[[^^a`^^[[   ',
+						'    [[[^^[[[    ',
+						' … …[[[[[[[[…   ',
+						' ……[[„„[[„„[[…  ',
+						'  …[[……„„……[[…  ',
+						'   …………………………   '],
+					[
+						'      ^^^^      ',
+						'    ^^aaaa^^    ',
+						'   ^^``aa``^^   ',
+						'    ^^^``^^^    ',
+						'    ^``^^``^    ',
+						'   ^^^aaaa`^    ',
+						' ^^ab^8]]]a^    ',
+						' ^abb^78]]a^    ',
+						' ^`ab^]777`^    ',
+						' ^`a^^6766`^^   ',
+						' ^^[[^^a`^^[[   ',
+						'    [[[^^[[[    ',
+						' … …[[[[[[[[…   ',
+						' ……[[„„[[„„[[…  ',
+						'  …[[……„„……[[…  ',
+						'   …………………………   ']], pal, 1, 'wood stove');
+
+
 			} // house interior
 		} // block images
 		{
@@ -11088,6 +11450,13 @@ var programCode = function (processingInstance) {
 			new Tile(['grass', 'fence bottom'], 'solid', 'K');
 			new Tile(['grass', 'fence bottom left'], 'solid', 'L');
 			new Tile(['grass', 'fence bottom right'], 'solid', 'M');
+			new Tile(['wood floor', 'bed bottom left'], 'solid', 'N');
+			new Tile(['wood floor', 'bed bottom right'], 'solid', 'O');
+			new Tile(['wood floor', 'bed top left'], 'solid', 'P');
+			new Tile(['wood floor', 'bed top right'], 'solid', 'Q');
+			new Tile(['wood floor', 'barrel'], 'solid', 'R');
+			new Tile(['wood floor', 'wood stove'], 'solid', 'S');
+			new Tile(['grass', 'well'], 'solid', 'T');
 		} // block tiles
 		{
 			new Image([
@@ -12013,18 +12382,18 @@ var programCode = function (processingInstance) {
 			new Image([
 				'                ',
 				'                ',
-				'   ‡            ',
-				'   †‡           ',
-				'    †‡          ',
-				'     †‡         ',
-				'      †‡        ',
-				'     f †f       ',
-				'    CffCceC     ',
-				'   CCfecC†‡C    ',
-				'    CCeeeCC     ',
-				'      CCC       ',
-				'                ',
-				'                ',
+				'  ˆˆ            ',
+				'  †‡ˆ           ',
+				'   †‡ˆ          ',
+				'    †‡ˆ         ',
+				'     †‡ˆ        ',
+				'      †‡ˆ       ',
+				'       †‡ˆ      ',
+				'  CC  f †ff     ',
+				'  CCCCffCceˆ    ',
+				'   CCCfecC†‡C   ',
+				'     CCeeeCC    ',
+				'       CCC      ',
 				'                ',
 				'                '], pal, 2, 'sharp axe interacting');
 		} // interacting images
@@ -12821,6 +13190,790 @@ var programCode = function (processingInstance) {
 					'                ',
 					'                ',
 					'                ']], pal, 1, 'slime');
+			new Animation([
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'       :        ',
+					'      :;:       ',
+					'      :;;:      ',
+					'     :;<>>:     ',
+					'     :;<>>:     ',
+					'    :;><<<;:    ',
+					'   3:;<7<7<:3   ',
+					'   39;<7<7;93   ',
+					'   339;;<;933   ',
+					'    33999933    ',
+					'     333333     ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'       :        ',
+					'      :;:       ',
+					'      :;>:      ',
+					'     :;<>>:     ',
+					'    :;<<<<;:    ',
+					'   :;><7<7<<:   ',
+					'  39;<<7;7<;93  ',
+					'  339;;;;;;933  ',
+					'   3399999933   ',
+					'    33333333    ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'      :::       ',
+					'    ::;<>:::    ',
+					'   :;;<<>>;;:   ',
+					'   :;><<<<<;:   ',
+					'  39;<77<77;93  ',
+					'  339;;;;;;933  ',
+					'   3399999933   ',
+					'    33333333    ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'   ::::   :::   ',
+					'  :;;<;:::>>;:  ',
+					' 39;><<<<<>>;93 ',
+					' 39;><77<77<933 ',
+					' 3399;;;<;;9933 ',
+					'  333999999333  ',
+					'    33333333    ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'      :::       ',
+					'    ::;;;:::    ',
+					'   :;;<<;>>;:   ',
+					'   :;><<<<>;:   ',
+					'  39;<77<77;:3  ',
+					'  339;;<<;;933  ',
+					'   3399999933   ',
+					'    33333333    ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'       :        ',
+					'      :;:       ',
+					'      :;>:      ',
+					'     :;<>>:     ',
+					'    :;;<<<;:    ',
+					'   :;;>7<7;;:   ',
+					'  39;;<7<7<;93  ',
+					'  339;;<<;;933  ',
+					'   3399999933   ',
+					'    33333333    ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'       :        ',
+					'      ::        ',
+					'      :;:       ',
+					'     :;;>:      ',
+					'     :;<>>:     ',
+					'    :;;<<<:     ',
+					'    :><7<7:     ',
+					'    9;<7<7:     ',
+					'    39<<<;9     ',
+					'   339;<;933    ',
+					'   333999933    ',
+					'    3333333     ',
+					'                '],
+				[
+					'                ',
+					'        :       ',
+					'       ::       ',
+					'       ::       ',
+					'      :;>:      ',
+					'      :;>>:     ',
+					'     :>;<<:     ',
+					'     :<<<7:     ',
+					'     :<7<7:     ',
+					'     :<<<<:     ',
+					'     :;<;:      ',
+					'    33:;<:33    ',
+					'   3339;;:933   ',
+					'   3399999993   ',
+					'    33333333    ',
+					'                '],
+				[
+					'        :       ',
+					'       :;:      ',
+					'      :;>:      ',
+					'      :;>:      ',
+					'     :><<;:     ',
+					'     :<<<7:     ',
+					'     :<<<7<:    ',
+					'     :<7<<;:    ',
+					'     :<7<<:     ',
+					'     :;;<<:     ',
+					'      :;;:      ',
+					'     339;93     ',
+					'    33:;;:333   ',
+					'   33:99999:33  ',
+					'    333333333   ',
+					'                '],
+				[
+					'       :::      ',
+					'      :;<>:     ',
+					'     :;<<>>:    ',
+					'     :><<7<:    ',
+					'     :<7<7<:    ',
+					'     :<7<<<:    ',
+					'     :;<<<;9    ',
+					'     9;;<;9     ',
+					'      9;;;9     ',
+					'       :;:      ',
+					'        ::      ',
+					'     33:;:3     ',
+					'    33:;;;:33   ',
+					'   33:99999:33  ',
+					'    333333333   ',
+					'                '],
+				[
+					'      :::::     ',
+					'     :;<<>>:    ',
+					'    :;><<>>;:   ',
+					'    :;<7<7<<:   ',
+					'    :;<7<7<<9   ',
+					'     9;<<<<9    ',
+					'     9;<<<;9    ',
+					'      9;;;9     ',
+					'       :;:      ',
+					'        ::      ',
+					'        ::      ',
+					'     333;:3     ',
+					'    33:;;;:33   ',
+					'   33:99999:33  ',
+					'    333333333   ',
+					'                '],
+				[
+					'      :::::     ',
+					'     :;<<>>:    ',
+					'    :;<<<>>;:   ',
+					'    :;>7<7<<:   ',
+					'    :;<7<7<;9   ',
+					'     9;<<<<9    ',
+					'     9;<<;;9    ',
+					'      9;<;9     ',
+					'       9;:      ',
+					'        9:      ',
+					'        9:      ',
+					'     333;:3     ',
+					'    333;;;333   ',
+					'   33:99999:33  ',
+					'    333333333   ',
+					'                ']], pal, 1, 'living sap animation');
+			new Animation([
+				[
+					'                ',
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU  bbbbb   ',
+					'  beWUbbeeeeeb  ',
+					' beeeeeedeedeeb ',
+					' be[hbedeededeb ',
+					'bde[[bccdecddeb ',
+					'bccb bbccdccdcb ',
+					' bb bcbcbbbbcbbU',
+					'   bbbcb_bccb_bU',
+					' __U_bb___bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU          ',
+					'  beWUbbbbbb    ',
+					' bdeeeddeeeebb  ',
+					' be[heeedeedeeb ',
+					'bde[[bedeededeb ',
+					'bddbbbccdecddeb ',
+					' bb  bbccdccdcb ',
+					'    bcbcbbbbcbbU',
+					'   bb_bcbbccb_bU',
+					' __U_bbb__bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'    UU          ',
+					'   UWWU         ',
+					'   beWU         ',
+					'  bdeebbbbb     ',
+					'  be[hddeeebb   ',
+					' bde[[eedeedeb  ',
+					' bddbbedeededeb ',
+					'  bb bccdecddeb ',
+					'     bbccdccdcb ',
+					'    bcbcbbbbcbbU',
+					'   bb_bcbbccb_bU',
+					' __U_bbb__bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'      UU        ',
+					'     bWWU       ',
+					'    beeWU       ',
+					'   be[hcb       ',
+					'  bde[[cb       ',
+					'  bddcceeb      ',
+					'   bbbeedebb    ',
+					'     bbddedeb   ',
+					'     bccedcdeb  ',
+					'     bbcccccdcb ',
+					'    bcbcbbbbcbb ',
+					'    b_bbbbccb_bU',
+					' ____bb___bbbbVU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'      UU        ',
+					'     bWWU       ',
+					'    beeWU       ',
+					'   be[hcb       ',
+					'  bde[[cb       ',
+					'  bddcceeb      ',
+					'   bbbeedebb    ',
+					'     bbddedeb   ',
+					'     bccedcdeb  ',
+					'     bbcccccdcb ',
+					'    bcbcbbbbcbb ',
+					'    b_bbbbccb_bU',
+					' ____bb___bbbbVU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'      UU        ',
+					'     bWWU       ',
+					'    beeWU       ',
+					'   be[hcb       ',
+					'  bde[[cb       ',
+					'  bddcceeb      ',
+					'   bbbeedebb    ',
+					'     bbddedeb   ',
+					'     bccedcdeb  ',
+					'     bbcccccdcb ',
+					'    bcbcbbbbcbb ',
+					'    b_bbbbccb_bU',
+					' ____bb___bbbbVU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'      UU        ',
+					'     bWWU       ',
+					'    beeWU       ',
+					'   be[hcb       ',
+					'  bde[[cb       ',
+					'  bddcceeb      ',
+					'   bbbeedebb    ',
+					'     bbddedeb   ',
+					'     bccedcdeb  ',
+					'     bbcccccdcb ',
+					'    bcbcbbbbcbb ',
+					'    b_bbbbccb_bU',
+					' ____bb___bbbbVU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'      UU        ',
+					'     bWWU       ',
+					'    beeWU       ',
+					'   be[hcb       ',
+					'  bde[[cb       ',
+					'  bddcceeb      ',
+					'   bbbeedebb    ',
+					'     bbddedeb   ',
+					'     bccedcdeb  ',
+					'     bbcccccdcb ',
+					'    bcbcbbbbcbb ',
+					'    b_bbbbccb_bU',
+					' ____bb___bbbbVU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'      UU        ',
+					'     bWWU       ',
+					'    beeWU       ',
+					'   be[hcb       ',
+					'  bde[[cb       ',
+					'  bddcceeb      ',
+					'   bbbeedebb    ',
+					'     bbddedeb   ',
+					'     bccedcdeb  ',
+					'     bbcccccdcb ',
+					'    bcbcbbbbcbb ',
+					'    b_bbbbccb_bU',
+					' ____bb___bbbbVU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'      UU        ',
+					'     bWWU       ',
+					'    beeWU       ',
+					'   be[hcb       ',
+					'  bde[[cb       ',
+					'  bddcceeb      ',
+					'   bbbeedebb    ',
+					'     bbddedeb   ',
+					'     bccedcdeb  ',
+					'     bbcccccdcb ',
+					'    bcbcbbbbcbb ',
+					'    b_bbbbccb_bU',
+					' ____bb___bbbbVU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'      UU        ',
+					'     bWWU       ',
+					'    beeWU       ',
+					'   be[hcb       ',
+					'  bde[[cb       ',
+					'  bddcceeb      ',
+					'   bbbeedebb    ',
+					'     bbddedeb   ',
+					'     bccedcdeb  ',
+					'     bbcccccdcb ',
+					'    bcbcbbbbcbb ',
+					'    b_bbbbccb_bU',
+					' ____bb___bbbbVU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'      UU        ',
+					'     bWWU       ',
+					'    beeWU       ',
+					'   be[hcb       ',
+					'  bde[[cb       ',
+					'  bddcceeb      ',
+					'   bbbeedebb    ',
+					'     bbddedeb   ',
+					'     bccedcdeb  ',
+					'     bbcccccdcb ',
+					'    bcbcbbbbcbb ',
+					'    b_bbbbccb_bU',
+					' ____bb___bbbbVU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'    UU          ',
+					'   UWWU         ',
+					'   beWU         ',
+					'  bdeebbbbb     ',
+					'  be[hddeeebb   ',
+					' bde[[eedeedeb  ',
+					' bddbbedeededeb ',
+					'  bb bccdecddeb ',
+					'     bbccdccdcb ',
+					'    bcbcbbbbcbbU',
+					'   bb_bcbbccb_bU',
+					' __U_bbb__bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU          ',
+					'  beWUbbbbbb    ',
+					' bdeeeddeeeebb  ',
+					' be[heeedeedeeb ',
+					'bde[[bedeededeb ',
+					'bddbbbccdecddeb ',
+					' bb  bbccdccdcb ',
+					'    bcbcbbbbcbbU',
+					'   bb_bcbbccb_bU',
+					' __U_bbb__bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU  bbbbb   ',
+					'  beWUbbeeeeeb  ',
+					' beeeeeedeedeeb ',
+					' be[hbedeededeb ',
+					'bde[[bccdecddeb ',
+					'bccb bbccdccdcb ',
+					' bb bcbcbbbbcbbU',
+					'   bbbcb_bccb_bU',
+					' __U_bb___bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU  bbbbb   ',
+					'  beWUbbeeeeeb  ',
+					' beeeeeedeedeeb ',
+					' be[hbedeededeb ',
+					'bde[[bccdecddeb ',
+					'bccb bbccdccdcb ',
+					' bb bcbcbbbbcbbU',
+					'   bbbcb_bccb_bU',
+					' __U_bb___bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU  bbbbb   ',
+					'  beWUbbeeeeeb  ',
+					' beeeeeedeedeeb ',
+					' be[hbedeededeb ',
+					'bde[[bccdecddeb ',
+					'bccb bbccdccdcb ',
+					' bb bcbcbbbbcbbU',
+					'   bbbcb_bccb_bU',
+					' __U_bb___bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU  bbbbb   ',
+					'  beWUbbeeeeeb  ',
+					' beeeeeedeedeeb ',
+					' be[hbedeededeb ',
+					'bde[[bccdecddeb ',
+					'bccb bbccdccdcb ',
+					' bb bcbcbbbbcbbU',
+					'   bbbcb_bccb_bU',
+					' __U_bb___bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU  bbbbb   ',
+					'  beWUbbeeeeeb  ',
+					' beeeeeedeedeeb ',
+					' be[hbedeededeb ',
+					'bde[[bccdecddeb ',
+					'bccb bbccdccdcb ',
+					' bb bcbcbbbbcbbU',
+					'   bbbcb_bccb_bU',
+					' __U_bb___bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU  bbbbb   ',
+					'  beWUbbeeeeeb  ',
+					' beeeeeedeedeeb ',
+					' be[hbedeededeb ',
+					'bde[[bccdecddeb ',
+					'bccb bbccdccdcb ',
+					' bb bcbcbbbbcbbU',
+					'   bbbcb_bccb_bU',
+					' __U_bb___bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU  bbbbb   ',
+					'  beWUbbeeeeeb  ',
+					' beeeeeedeedeeb ',
+					' be[hbedeededeb ',
+					'bde[[bccdecddeb ',
+					'bccb bbccdccdcb ',
+					' bb bcbcbbbbcbbU',
+					'   bbbcb_bccb_bU',
+					' __U_bb___bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU  bbbbb   ',
+					'  beWUbbeeeeeb  ',
+					' beeeeeedeedeeb ',
+					' be[hbedeededeb ',
+					'bde[[bccdecddeb ',
+					'bccb bbccdccdcb ',
+					' bb bcbcbbbbcbbU',
+					'   bbbcb_bccb_bU',
+					' __U_bb___bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU  bbbbb   ',
+					'  beWUbbeeeeeb  ',
+					' beeeeeedeedeeb ',
+					' be[hbedeededeb ',
+					'bde[[bccdecddeb ',
+					'bccb bbccdccdcb ',
+					' bb bcbcbbbbcbbU',
+					'   bbbcb_bccb_bU',
+					' __U_bb___bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU  bbbbb   ',
+					'  beWUbbeeeeeb  ',
+					' beeeeeedeedeeb ',
+					' be[hbedeededeb ',
+					'bde[[bccdecddeb ',
+					'bccb bbccdccdcb ',
+					' bb bcbcbbbbcbbU',
+					'   bbbcb_bccb_bU',
+					' __U_bb___bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU  bbbbb   ',
+					'  beWUbbeeeeeb  ',
+					' beeeeeedeedeeb ',
+					' be[hbedeededeb ',
+					'bde[[bccdecddeb ',
+					'bccb bbccdccdcb ',
+					' bb bcbcbbbbcbbU',
+					'   bbbcb_bccb_bU',
+					' __U_bb___bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU  bbbbb   ',
+					'  beWUbbeeeeeb  ',
+					' beeeeeedeedeeb ',
+					' be[hbedeededeb ',
+					'bde[[bccdecddeb ',
+					'bccb bbccdccdcb ',
+					' bb bcbcbbbbcbbU',
+					'   bbbcb_bccb_bU',
+					' __U_bb___bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU  bbbbb   ',
+					'  beWUbbeeeeeb  ',
+					' beeeeeedeedeeb ',
+					' be[hbedeededeb ',
+					'bde[[bccdecddeb ',
+					'bccb bbccdccdcb ',
+					' bb bcbcbbbbcbbU',
+					'   bbbcb_bccb_bU',
+					' __U_bb___bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU  bbbbb   ',
+					'  beWUbbeeeeeb  ',
+					' beeeeeedeedeeb ',
+					' be[hbedeededeb ',
+					'bde[[bccdecddeb ',
+					'bccb bbccdccdcb ',
+					' bb bcbcbbbbcbbU',
+					'   bbbcb_bccb_bU',
+					' __U_bb___bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU  bbbbb   ',
+					'  beWUbbeeeeeb  ',
+					' beeeeeedeedeeb ',
+					' be[hbedeededeb ',
+					'bde[[bccdecddeb ',
+					'bccb bbccdccdcb ',
+					' bb bcbcbbbbcbbU',
+					'   bbbcb_bccb_bU',
+					' __U_bb___bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU  bbbbb   ',
+					'  beWUbbeeeeeb  ',
+					' beeeeeedeedeeb ',
+					' be[hbedeededeb ',
+					'bde[[bccdecddeb ',
+					'bccb bbccdccdcb ',
+					' bb bcbcbbbbcbbU',
+					'   bbbcb_bccb_bU',
+					' __U_bb___bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU  bbbbb   ',
+					'  beWUbbeeeeeb  ',
+					' beeeeeedeedeeb ',
+					' be[hbedeededeb ',
+					'bde[[bccdecddeb ',
+					'bccb bbccdccdcb ',
+					' bb bcbcbbbbcbbU',
+					'   bbbcb_bccb_bU',
+					' __U_bb___bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU  bbbbb   ',
+					'  beWUbbeeeeeb  ',
+					' beeeeeedeedeeb ',
+					' be[hbedeededeb ',
+					'bde[[bccdecddeb ',
+					'bccb bbccdccdcb ',
+					' bb bcbcbbbbcbbU',
+					'   bbbcb_bccb_bU',
+					' __U_bb___bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU  bbbbb   ',
+					'  beWUbbeeeeeb  ',
+					' beeeeeedeedeeb ',
+					' be[hbedeededeb ',
+					'bde[[bccdecddeb ',
+					'bccb bbccdccdcb ',
+					' bb bcbcbbbbcbbU',
+					'   bbbcb_bccb_bU',
+					' __U_bb___bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'   UU           ',
+					'  UWWU  bbbbb   ',
+					'  beWUbbeeeeeb  ',
+					' beeeeeedeedeeb ',
+					' be[hbedeededeb ',
+					'bde[[bccdecddeb ',
+					'bccb bbccdccdcb ',
+					' bb bcbcbbbbcbbU',
+					'   bbbcb_bccb_bU',
+					' __U_bb___bb__VU',
+					'____WVW____WVW__',
+					'___W___VWVWV____',
+					' ______________ ']], pal, 2, 'rat animation');
 		} // enemy images
 		{
 			/*
@@ -12961,7 +14114,24 @@ var programCode = function (processingInstance) {
 				'  [[[[[[[[[[[[  ',
 				'  [[[[[[[[[[[[  ',
 				'                ',
-				'                '], pal, 2, 'lumberjack flannel');
+				'                '], pal, 2, 'red lumberjack flannel');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[o}[[}o[[[  ',
+				'  [[on~oo~no[[  ',
+				'  [[}~<}~<~}[[  ',
+				'  [[on}nn}no[[  ',
+				'  [[}[<~~<[}[[  ',
+				'  [[n[}nn}[n[[  ',
+				'  [[[[}n[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'blue lumberjack flannel');
 			new Image([
 				'                ',
 				'                ',
@@ -13081,6 +14251,108 @@ var programCode = function (processingInstance) {
 				'  [[[[[[[[[[[[  ',
 				'                ',
 				'                '], pal, 2, 'frayed clothesline');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[{{[[[[{{[[  ',
+				'  [[xwy[[ywx[[  ',
+				'  [[xwz[[zwx[[  ',
+				'  [[xwz[[zwx[[  ',
+				'  [[{{z[[z{{[[  ',
+				'  [[{zy[[yz{[[  ',
+				'  [[[zy[[yz[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'white shoes');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[aabc[[[  ',
+				'  [[[[abcda[[[  ',
+				'  [[[abcdcb[[[  ',
+				'  [[[adcdba[[[  ',
+				'  [[bccdba[[[[  ',
+				'  [[d[ddba[[[[  ',
+				'  [[b[d[a[[[[[  ',
+				'  [[[[c[b[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'rodent fur');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[/1[[[[  ',
+				'  [[[[[/0/0[[[  ',
+				'  [[[[[01.1[[[  ',
+				'  [[[[/.-101[[  ',
+				'  [[[1.-[-11[[  ',
+				'  [[/.[[-./.[[  ',
+				'  [[[-[/-[/[[[  ',
+				'  [[[[[[/[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'half digested grain');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[===[[[[[  ',
+				'  [[[[=;==;[[[  ',
+				'  [[[[===;:[[[  ',
+				'  [[[[;;=;:[[[  ',
+				'  [[[[[;=~[[[[  ',
+				'  [[[[[=}[[[[  ',
+				'  [[[[[}[[[[[  ',
+				'  [[[[[}[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'moldy cheese');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[1)[[[[  ',
+				'  [[[[[101)[[[  ',
+				'  [[[[1/./)[[[  ',
+				'  [[[1/.[.[[[[  ',
+				'  [[[/[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'rat tooth');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[‡‡[[[[  ',
+				'  [[[[[†‡‡‡[[[  ',
+				'  [[[[†‡ˆ‰[[[[  ',
+				'  [[[†‡‡‰[[[[[  ',
+				'  [[[†††‡‰[[[[  ',
+				'  [[[:[††‡‡[[[  ',
+				'  [[[;[;[††‡[[  ',
+				'  [[[[[<[;[†[[  ',
+				'  [<;;;<;;:;;[  ',
+				'  [[[:;;:::[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'sticky sap');
 		} // item images
 		{
 			var armorAnimation = 0.45;
@@ -14389,7 +15661,56 @@ var programCode = function (processingInstance) {
 					'                ',
 					'                ',
 					'                ',
-					'                '], pal, armorAnimation, 'lumberjack flannel animation');
+					'                '], pal, armorAnimation, 'red lumberjack flannel animation');
+				new ShirtAnimation([
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'    nn    nn    ',
+					'   ;}~<nm<~};   ',
+					'   |oo~ol~oo|   ',
+					'  |<}~<~m<~}<|  ',
+					'  n}no~ol~on}n  ',
+					'  n  n}nm}n  n  ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                '], [
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'    nn    nn    ',
+					'   ;}~<nn<~};   ',
+					'   |oo~oo~oo|   ',
+					'  |<}~<~~<~}<|  ',
+					'  n}no~oo~on}n  ',
+					'  n  n}nn}n  n  ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                '], pal, armorAnimation, 'blue lumberjack flannel animation');
 				new ShirtAnimation([
 					'                ',
 					'                ',
@@ -14454,12 +15775,17 @@ var programCode = function (processingInstance) {
 				for (var i = 0; i < hairKeys.length; i++) {
 					var col = hairs[hairKeys[i]];
 					new ShortHairAnimation(col[0], col[1], col[2], col[3], pal, armorAnimation, 'short ' + hairKeys[i] + ' hair animation');
-					new ShortHairAnimation(col[0], col[1], col[2], col[3], pal, armorAnimation, 'long ' + hairKeys[i] + ' hair animation');
+					new LongHairAnimation(col[0], col[1], col[2], col[3], pal, armorAnimation, 'long ' + hairKeys[i] + ' hair animation');
 					new ShortBeardAnimation(col[0], col[1], col[2], pal, armorAnimation, 'short ' + hairKeys[i] + ' beard animation');
+
+					new Armor('short ' + hairKeys[i] + ' hair', 'booger', 0, 0, 'hair', 'short ' + hairKeys[i] + ' hair animation', {});
+					new Armor('long ' + hairKeys[i] + ' hair', 'booger', 0, 0, 'hair', 'long ' + hairKeys[i] + ' hair animation', {});
+					new Armor('short ' + hairKeys[i] + ' beard', 'booger', 0, 0, 'face', 'short ' + hairKeys[i] + ' beard animation', {});
 				}
 			} // hair animations
 			{
 				new BootsAnimation('‡', 'ˆ', '‰', pal, armorAnimation, 'brown boots animation');
+				new BootsAnimation('x', 'y', 'z', pal, armorAnimation, 'white shoes animation');
 			} // boots animations
 			{
 				new PantsAnimation('.', '1', '2', '2', pal, armorAnimation, 'canvas pants animation');
@@ -14471,6 +15797,8 @@ var programCode = function (processingInstance) {
 		} // animations
 		{
 			new Enemy('slime', 'slime', 1, 4, 2, 100, 100, 1, 3, 4, 0, 4, { 'booger': 100, 'skull': 50 }, true);
+			new Enemy('living sap animation', 'living sap', 1, 4, 2, 80, 40, 4, 20, 10, 0, 4, { 'moldy cheese': 100 }, true, 'sticky sap');
+			new Enemy('rat animation', 'rat', 2, 1, 1, 20, 40, 4, 12, 4, 0, 4, { 'rat tooth': 10, 'moldy cheese': 50, 'half digested grain': 20, 'rodent fur': 60 }, true, 'nothing');
 		} // enemies
 		{
 			Player['info'] = new Alert([
@@ -14546,16 +15874,15 @@ var programCode = function (processingInstance) {
 				'gbbbh']);
 		} // guis
 		{
-			{
-				new Armor('short brown hair', 'booger', 0, 0, 'hair', 'short brown hair animation', {});
-				new Armor('short brown beard', 'booger', 0, 0, 'face', 'short brown beard animation', {});
-			} // hair
+			{ } // hair
 			{
 				new Armor('worn boots', 'brown boots', 12, 2, 'feet', 'brown boots animation', { 'armor': 2 });
+				new Armor('white shoes', 'white shoes', 14, 2, 'feet', 'white shoes animation', { 'armor': 2 });
 			} // boots
 			{
 				new Armor('ragged leather jerkin', 'ragged leather jerkin', 24, 4, 'chest', 'ragged leather jerkin animation', { 'armor': 6 });
-				new Armor('lumberjack flannel', 'lumberjack flannel', 45, 8, 'chest', 'lumberjack flannel animation', { 'armor': 10, 'strength': 2 });
+				new Armor('red lumberjack flannel', 'red lumberjack flannel', 45, 8, 'chest', 'red lumberjack flannel animation', { 'armor': 10, 'strength': 2 });
+				new Armor('blue lumberjack flannel', 'blue lumberjack flannel', 50, 9, 'chest', 'blue lumberjack flannel animation', { 'armor': 11, 'luck': 2 });
 				new Armor('blue farm dress top', 'blue farm dress top', 18, 3, 'chest', 'blue farm dress top animation', { 'armor': 4 });
 				new Armor('white skirt', 'white skirt', 15, 3, 'legs', 'white skirt animation', { 'armor': 3 });
 			} // shirts
@@ -14570,7 +15897,7 @@ var programCode = function (processingInstance) {
 				new Armor('thick leather gloves', 'thick leather gloves', 20, 3, 'hands', 'thick leather gloves animation', { 'armor': 2 });
 			} // gloves
 			{
-				new Armor('frayed clothesline', 'frayed clothesline', 17, 3, 'waist', 'frayed clothesline animation', {'armor': 3});
+				new Armor('frayed clothesline', 'frayed clothesline', 17, 3, 'waist', 'frayed clothesline animation', { 'armor': 3 });
 			} // belts
 			{
 				new Armor('bread knife', 'bread knife', 30, 5, 'mainhand', 'nothing', { 'weapon damage': 10 });
@@ -14578,6 +15905,12 @@ var programCode = function (processingInstance) {
 			{
 				new Food('stale bread', 'stale bread', 8, 2, 15);
 			} // food
+			{
+				new Item('half digested grain', 'half digested grain', 8, 1);
+				new Item('rodent fur', 'rodent fur', 12, 3);
+				new Item('moldy cheese', 'moldy cheese', 11, 2);
+				new Item('rat tooth', 'rat tooth', 15, 3);
+			} // junk
 			new Item('sharp axe', 'sharp axe', 36, 6);
 		} // items
 		{
@@ -14588,7 +15921,7 @@ var programCode = function (processingInstance) {
 				'(!!JKK45556$!)-*!JKKKI$$',
 				'$!!HFF12223!!!!(!HF!FH$$',
 				'!!!HFF.000/!!!!!!HF!FH!$',
-				'!E!LKK),+-*!!G!FFLM!LM!!',
+				'!T!LKK),+-*!!G!FFLM!LM!!',
 				'!!!!!!$!(!!%&!!!!!!&!!!!',
 				'!!!!%&!!!!!&!!F!!!!!!%!!',
 				'!!$!!E!!!%!!!!!E!(!%!EF!',
@@ -14600,7 +15933,7 @@ var programCode = function (processingInstance) {
 				'!!!!!!&!!!!!!!!!!!&%!!!!'],
 				{
 					'quest': [
-						{ 'name': 'James Sliver', 'x': 13, 'y': 7 }
+						{ 'name': 'James Sliver', 'x': 13, 'y': 9 }
 					]
 				});
 			new Screen(1, 0, 0, [
@@ -14657,6 +15990,16 @@ var programCode = function (processingInstance) {
 				{
 					'interacting': [
 						{ 'name': 'sharp axe', 'x': 6, 'y': 10 }
+					],
+					'enemy': [
+						{ 'name': 'living sap', 'x': 3, 'y': 4 },
+						{ 'name': 'living sap', 'x': 7, 'y': 6 },
+						{ 'name': 'living sap', 'x': 4, 'y': 11 },
+						{ 'name': 'living sap', 'x': 13, 'y': 7 },
+						{ 'name': 'living sap', 'x': 18, 'y': 10 },
+						{ 'name': 'living sap', 'x': 19, 'y': 3 },
+						{ 'name': 'living sap', 'x': 17, 'y': 13 },
+						{ 'name': 'living sap', 'x': 15, 'y': 2 },
 					]
 				});
 			new Screen(0, 1, 0, [
@@ -14700,10 +16043,10 @@ var programCode = function (processingInstance) {
 				'                        ',
 				'                        ',
 				'      <888888=          ',
-				'      :777DCD;          ',
+				'      :PQ77S7;          ',
+				'      :NO7DCD;          ',
 				'      :777777;          ',
-				'      :777777;          ',
-				'      :7A77A7;          ',
+				'      :RA77A7;          ',
 				'      >9B99@9?          ',
 				'                        ',
 				'                        ',
@@ -14711,26 +16054,245 @@ var programCode = function (processingInstance) {
 				'                        ',
 				'                        '], {
 				'quest': [
-					{ 'name': 'Matilda Sliver', 'x': 12, 'y': 7 }
+					{ 'name': 'Matilda Sliver', 'x': 11, 'y': 8 }
 				]
 			});
+			new Interior(0, 0, 0, 14, 3, 11, 9, 11, 10, [
+				'                        ',
+				'                        ',
+				'                        ',
+				'                        ',
+				'                        ',
+				'        <88888=         ',
+				'        :CR7RR;         ',
+				'        :7777R;         ',
+				'        :7R777;         ',
+				'        :77A77;         ',
+				'        >99@99?         ',
+				'                        ',
+				'                        ',
+				'                        ',
+				'                        ',
+				'                        '], {
+				'enemy': [
+					{ 'name': 'rat', 'x': 9, 'y': 8 },
+					{ 'name': 'rat', 'x': 11, 'y': 6 },
+					{ 'name': 'rat', 'x': 12, 'y': 7 },
+				]
+			})
 		} // maps
 		{
-			new Ability('slash', 'damage', 'slash', 'humanUp', 20, 10, 3);
+			new Animation([
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'            ff  ',
+					'           ehhf ',
+					'           eghf ',
+					'            ee  ',
+					'                ',
+					'                ',
+					'                ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'           ff   ',
+					'          fhhf  ',
+					'          egghf ',
+					'           eegf ',
+					'             e  ',
+					'                ',
+					'                ',
+					'                ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'         ff     ',
+					'        fhhff   ',
+					'        fgghhf  ',
+					'         eegghf ',
+					'           eegf ',
+					'             e  ',
+					'                ',
+					'                ',
+					'                ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'       ff       ',
+					'      fhhff     ',
+					'      fhhhhff   ',
+					'      egggghhf  ',
+					'       eeeegghf ',
+					'           eegf ',
+					'             e  ',
+					'                ',
+					'                ',
+					'                ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'     ffff       ',
+					'    fhhhhff     ',
+					'   ehhhhhhhff   ',
+					'   ehhhgggghhf  ',
+					'    eggeeeeggf  ',
+					'     ee    ee   ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'     ffff       ',
+					'   ffhhhhff     ',
+					'  fhhhhhhhhf    ',
+					'  fhhhhgggggf   ',
+					' fhhhhgeeeee    ',
+					' fhhhge         ',
+					'  egge          ',
+					'   ee           ',
+					'                ',
+					'                ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'     ffff       ',
+					'   ffhhhhf      ',
+					'  fhhhhhhf      ',
+					'  fhhhhggf      ',
+					' fhhhhgee       ',
+					' fhhhge         ',
+					'  egge          ',
+					'   ee           ',
+					'                ',
+					'                ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'     fff        ',
+					'   ffhhf        ',
+					'  fhhhhhf       ',
+					'  fhhhhgf       ',
+					' fhhhhge        ',
+					' fhhhge         ',
+					'  egge          ',
+					'   ee           ',
+					'                ',
+					'                ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'   ff           ',
+					'  fhhf          ',
+					'  fhhhf         ',
+					' fhhhgf         ',
+					' fhhhge         ',
+					'  egge          ',
+					'   ee           ',
+					'                ',
+					'                ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'   ff           ',
+					'  fhhf          ',
+					' fhhhff         ',
+					' fhhhge         ',
+					'  egge          ',
+					'   ee           ',
+					'                ',
+					'                ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					' fff            ',
+					' fhhf           ',
+					'  ehge          ',
+					'   ee           ',
+					'                ',
+					'                ',
+					'                ']], pal, 0.2, 'slash animation');
+		} // ability animations
+		{
+			new Ability('slash', 'damage', 'slash', 'slash animation', 20, 10, 3);
 		} // abilities
 		{
 			new Npc('James Sliver', 'quest', 'humanAnimation', {
 				'hair': 'short brown hair',
 				'face': 'short brown beard',
-				'chest': 'lumberjack flannel',
+				'chest': 'red lumberjack flannel',
+				'legs': 'blue jeans',
+				'feet': 'worn boots'
+			});
+			new Npc('Charles Hackitt', 'quest', 'humanAnimation', {
+				'hair': 'short blond hair',
+				'chest': 'blue lumberjack flannel',
 				'legs': 'blue jeans',
 				'feet': 'worn boots'
 			});
 			new Npc('Matilda Sliver', 'quest', 'humanAnimation', {
-				'hair': 'long black hair',
 				'chest': 'blue farm dress top',
+				'hair': 'long black hair',
 				'legs': 'white skirt',
-				'feet': 'worn boots'
+				'feet': 'white shoes'
 			});
 		} // npcs
 		{
@@ -14745,6 +16307,7 @@ var programCode = function (processingInstance) {
 				'Thank you for your serfice %! Take these, if it wasn\'t for you they would have no doubt ended up in the stomach of a rodent.');
 		} // quests
 		{
+			new Buff('sticky sap', 'sticky sap', 'speed', -1.5, 120);
 		} // buffs
 		var loadAll = function () {
 			fill(0xFFFFFFFF);
@@ -14885,6 +16448,7 @@ var programCode = function (processingInstance) {
 			if (!loaded && width === 768) {
 				loadAll();
 			} else {
+				console.log(Player['stats']['speed']);
 				cursor('none');
 				World.draw(Player['loc']['scene']['x'], Player['loc']['scene']['y'], Player['loc']['scene']['z']);
 				Player.movement();
