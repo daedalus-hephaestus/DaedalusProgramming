@@ -19,7 +19,7 @@ var programCode = function (processingInstance) {
 		}; // stores the key controls 
 
 		var loaded = false; // whether or not the assets are loaded
-		var collisionBoxes = true; // shows tile collision boxes if true
+		var collisionBoxes = false; // shows tile collision boxes if true
 		var keys = []; // stores the keys being pressed
 		var mouseIsPressed = false; // if mouse is being pressed
 		var keyIsPressed = true; // if a key is being pressed
