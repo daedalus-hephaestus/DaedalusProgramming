@@ -5,7 +5,7 @@ var programCode = function (processingInstance) {
 		/*jshint sub:true*/
 
 
-		var saveFile = [];
+		var saveFile = [[0,0,0,416,288,448,130,[14,3]],[10,40,['brown bag','nothing','nothing','nothing','nothing'],[{'rodent fur': 1,'stale bread': 2,'twig': 6,'drop of sap': 6,'dead leaf': 9,'ragged leather jerkin': 1,},{},{},{},{}],['nothing','nothing','nothing','blue lumberjack flannel','nothing','thick leather gloves','nothing','canvas pants','frayed clothesline','worn boots','bread knife','nothing','short brown hair','nothing'],['slash'],['slash','nothing','nothing','nothing','nothing'],{}],[100,100,143,2,200],[['Pesky Rats','The Lost Axe','Sticky Situation',],[]]];
 		var FRAME_RATE = 60; // frame rate
 		var PIXEL_SIZE = 2; // pixel size
 		var TILE_SIZE = 16; // normal tile size
@@ -246,7 +246,7 @@ var programCode = function (processingInstance) {
 			}
 			return (cur);
 		}; // returns the greatest number value in an array
-		var calcDamage = function (luck, strength, enemyArmor, level, enemyLevel, weapon) {
+		var calcDamage = function (luck, strength, enemyArmor, level, enemyLevel, min, max, weapon) {
 			if (weapon === undefined) {
 				weapon = 0;
 			}
@@ -256,10 +256,12 @@ var programCode = function (processingInstance) {
 			damage += random(0, luck * 4); // add a random crit bonus based on player's luck stat
 			damage -= enemyArmor; // subtract the players armor points from the damage
 			damage += weapon; // adds weapon damage
+			damage += random(min, max);
 			damage = round(damage); // round the damage to an integer value
 			if (damage < 0) {
 				damage = 0;
 			}
+			console.log(damage);
 			return damage;
 		} // calculates the damage based on 5 stats
 		frameRate(FRAME_RATE);
@@ -437,8 +439,8 @@ var programCode = function (processingInstance) {
 		}; // stores information about the player
 		Player.update = function () {
 			Player['colBox'] = {
-				'x': (round(Player['loc']['x']/PIXEL_SIZE)*PIXEL_SIZE + Player['size']['colX'] * PIXEL_SIZE),
-				'y': (round(Player['loc']['y']/PIXEL_SIZE)*PIXEL_SIZE + Player['size']['colY'] * PIXEL_SIZE),
+				'x': (round(Player['loc']['x'] / PIXEL_SIZE) * PIXEL_SIZE + Player['size']['colX'] * PIXEL_SIZE),
+				'y': (round(Player['loc']['y'] / PIXEL_SIZE) * PIXEL_SIZE + Player['size']['colY'] * PIXEL_SIZE),
 				'xSize': Player['size']['colXSize'] * PIXEL_SIZE,
 				'ySize': Player['size']['colYSize'] * PIXEL_SIZE,
 			}; // calculates the players collision box so that it is consistent with x and y location
@@ -853,7 +855,7 @@ var programCode = function (processingInstance) {
 
 			var completedQuests = '';
 			for (var i = 0; i < Player['actions']['completedQuests'].length; i++) {
-				completedQuests += '\'' + Player['actions']['completedQuests'] + '\',';
+				completedQuests += '\'' + Player['actions']['completedQuests'][i] + '\',';
 			}
 
 			var used = [];
@@ -883,7 +885,7 @@ var programCode = function (processingInstance) {
 					'\'' + Player['inventory']['equipment']['waist'] + '\'',
 					'\'' + Player['inventory']['equipment']['feet'] + '\'',
 					'\'' + Player['inventory']['equipment']['mainhand'] + '\'',
-					'\'' + Player['inventory']['equipment']['offHand'] + '\'',
+					'\'' + Player['inventory']['equipment']['offhand'] + '\'',
 					'\'' + Player['inventory']['equipment']['hair'] + '\'',
 					'\'' + Player['inventory']['equipment']['face'] + '\''
 				] + ']',
@@ -939,11 +941,16 @@ var programCode = function (processingInstance) {
 			for (var i = 1; i < 6; i++) {
 				Player['inventory']['bagSlots']['bag' + i] = saveFile[1][2][i - 1];
 				Player['inventory']['bags']['bag' + i] = saveFile[1][3][i - 1];
+				console.log(saveFile[1][6][i - 1]);
+				if (saveFile[1][6][i - 1] !== 'nothing') {
+					abilities[saveFile[1][6][i - 1]].equip(i);
+				}
 				Player['inventory']['abilityBar'][i] = saveFile[1][6][i - 1];
 			}
 			var tempKeys = Object.keys(Player['inventory']['equipment']);
 			for (var i = 0; i < tempKeys.length; i++) {
 				if (saveFile[1][4][i] !== 'nothing') {
+					console.log(saveFile[1][4][i]);
 					items[saveFile[1][4][i]].use();
 				}
 				Player['inventory']['equipment'][tempKeys[i]] = saveFile[1][4][i];
@@ -8940,11 +8947,13 @@ var programCode = function (processingInstance) {
 			};
 		} // xp bar constructor
 		{
-			var Enemy = function (image, name, maxLevel, minLevel, speed, endurance, fortitude, luck, strength, armor, vitality, vigor, loot, aggressive, special) {
+			var Enemy = function (image, name, minLevel, maxLevel, minDamage, maxDamage, speed, endurance, fortitude, luck, strength, armor, vitality, vigor, loot, aggressive, special) {
 				this.image = image;
 				this.name = name;
 				this.maxLevel = maxLevel;
 				this.minLevel = minLevel;
+				this.maxDamage = maxDamage;
+				this.minDamage = minDamage;
 				this.speed = speed;
 				this.loot = loot;
 
@@ -9007,8 +9016,7 @@ var programCode = function (processingInstance) {
 						buffs[this.special].give();
 						this.curEndurance -= 30; // subtracts energy
 					} else {
-						var damage = round(random(0, 10)); // generates a random damage amount
-						damage += calcDamage(this.luck, this.strength, Player['stats']['armor'], entity.level, Player['stats']['level']);
+						var damage = calcDamage(this.luck, this.strength, Player['stats']['armor'], entity.level, Player['stats']['level'], this.minDamage, this.maxDamage);
 						new Popup(String(damage), GUI_TEXT_COLOR, Player['loc']['x'], Player['loc']['y'], 'enemyDamage');
 						if (Player['stats']['curFortitude'] - damage >= 0) {
 							Player['stats']['curFortitude'] -= damage;
@@ -9027,8 +9035,7 @@ var programCode = function (processingInstance) {
 						if (cooldown['cur'] === cooldown['max'] && Player['stats']['curEndurance'] >= a.cost) {
 							if (a.type === 'damage') {
 								Player['stats']['curEndurance'] -= a.cost; // take away the player's energy
-								var damage = a.amount; // store the amount of damage the ability should do
-								damage += calcDamage(Player['stats']['luck'], Player['stats']['strength'], this.armor, Player['stats']['level'], entity.level, Player['stats']['weapon damage']);
+								var damage = calcDamage(Player['stats']['luck'], Player['stats']['strength'], this.armor, Player['stats']['level'], entity.level, a.min, a.max, Player['stats']['weapon damage']);
 								new Popup(String(damage), GUI_TEXT_COLOR, entity.x, entity.y, 'playerDamage');
 								if (this.curFortitude - damage >= 0) {
 									this.curFortitude -= damage;
@@ -9041,6 +9048,11 @@ var programCode = function (processingInstance) {
 							}
 							cooldown['change'] = 1; // start the cooldown
 							if (this.curFortitude === 0) {
+								World['animations'].push({
+									animation: images['death animation'],
+									x: entity.x,
+									y: entity.y
+								}); // adds an animation to the world animation list
 								entity.alive = false; // set the entity to dead so that it doesn't appear on the map
 								var q = Object.keys(Player['inventory']['quests']);
 								for (var i = 0; i < q.length; i++) {
@@ -9088,8 +9100,6 @@ var programCode = function (processingInstance) {
 				this.p.image(images[images[this.animationSet]['down']]['a'][0]);
 				var tempKeys = Object.keys(this.equipment);
 				for (var i = 0; i < tempKeys.length; i++) {
-					console.log(tempKeys[i]);
-					console.log(items[tempKeys[i]]);
 					var anim = images[images[items[this.equipment[tempKeys[i]]].animationSet].down].a[0];
 					this.p.image(anim);
 				}
@@ -9190,8 +9200,8 @@ var programCode = function (processingInstance) {
 			Food.prototype = Object.create(Item.prototype);
 			Food.prototype.constructor = Food;
 			Food.prototype.use = function () {
-				if (Player['stats']['fortitude'] < Player['stats']['maxFortitude']) {
-					Player['stats']['fortitude'] += this.health;
+				if (Player['stats']['curFortitude'] < Player['stats']['fortitude']) {
+					Player['stats']['curFortitude'] += this.health;
 				}
 			};
 			Food.prototype.useable = function () {
@@ -9219,6 +9229,23 @@ var programCode = function (processingInstance) {
 				}
 			};
 		} // drink constructors
+		{
+			var Consumable = function (name, image, buy, sell, buff) {
+				Item.call(this, name, image, buy, sell);
+				this.text = this.name + '\n\nGives you ' + buff + '\nCannot be used in\ncombat\n\nclick to use';
+				this.buff = buff;
+			};
+			Consumable.prototype = Object.create(Item.prototype);
+			Consumable.prototype.constructor = Consumable;
+			Consumable.prototype.use = function () {
+				buffs[this.buff].give();
+			};
+			Consumable.prototype.useable = function () {
+				if (!Player['actions']['fighting']) {
+					return true;
+				}
+			};
+		} // consumable constructors
 		{
 			var Armor = function (name, image, buy, sell, slot, animationSet, stats) {
 				Item.call(this, name, image, buy, sell);
@@ -9508,18 +9535,19 @@ var programCode = function (processingInstance) {
 			};
 		} // quest constructors
 		{
-			var Ability = function (name, type, image, animation, amount, cost, cooldown) {
+			var Ability = function (name, type, image, animation, min, max, cost, cooldown) {
 				this.name = name;
 				this.type = type;
 				this.image = image;
 				this.animation = animations[animation];
-				this.amount = amount;
+				this.min = min;
+				this.max = max;
 				this.cost = cost;
 				this.cooldown = cooldown;
 				this.text = name + '\ncosts ' + this.cost + ' endurance\n';
 				abilities[this.name] = this;
 				if (this.type === 'damage') {
-					this.text += 'does ' + this.amount + ' damage';
+					this.text += 'does ' + this.min + '-' + this.max + ' damage';
 				} else if (this.type === 'buff') {
 					this.text += 'empowers you with\n' + this.amount;
 				}
@@ -10171,7 +10199,7 @@ var programCode = function (processingInstance) {
 				buffs[this.name] = this;
 			};
 			Buff.prototype.give = function () {
-				if(Player['buffs'][this.name] === undefined) {
+				if (Player['buffs'][this.name] === undefined) {
 					Player['stats'][this.stat] += this.amount;
 				}
 				Player['buffs'][this.name] = this.duration * FRAME_RATE;
@@ -14340,6 +14368,23 @@ var programCode = function (processingInstance) {
 				'                ',
 				'                ',
 				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[;;;[[[[[  ',
+				'  [[[[[;<;[[[[  ',
+				'  [[[[[;<;[[[[  ',
+				'  [[[[;<==;[[[  ',
+				'  [[[;=<==;[[[  ',
+				'  [[[;<=<<:[[[  ',
+				'  [[[:;<<;:[[[  ',
+				'  [[[[::::[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'drop of sap');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
 				'  [[[[[[‡‡[[[[  ',
 				'  [[[[[†‡‡‡[[[  ',
 				'  [[[[†‡ˆ‰[[[[  ',
@@ -14353,6 +14398,74 @@ var programCode = function (processingInstance) {
 				'  [[[[[[[[[[[[  ',
 				'                ',
 				'                '], pal, 2, 'sticky sap');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[>[[[[[[  ',
+				'  [[[[[>[[[[[[  ',
+				'  [[[[>@[[[[[[  ',
+				'  [[[[@=[[<[[[  ',
+				'  [[[>@=@@<[[[  ',
+				'  [[[>=<@=<[[[  ',
+				'  [[[=[[><[[[[  ',
+				'  [[[[[[=<[[[[  ',
+				'  [[[[[[<[[[[[  ',
+				'  [[[[[[<[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'sugar rush');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[56555[[  ',
+				'  [[[[6645[[5[  ',
+				'  [[[55445[[[[  ',
+				'  [[[64545[[[[  ',
+				'  [[55455[[[[[  ',
+				'  [[645[[[[[[[  ',
+				'  [[45[[[[[[[[  ',
+				'  [[4[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'dead leaf');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[ˆ[[  ',
+				'  [[[[[[[[[ˆ[[  ',
+				'  [[[GFˆ[[ˆ†[[  ',
+				'  [[GEE[ˆ[‡[[[  ',
+				'  [[E[[[‡ˆ†[[[  ',
+				'  [[[[[[‡†[[[[  ',
+				'  [[[[[ˆ†[[[[[  ',
+				'  [[[ˆ‡†[[[[[[  ',
+				'  [[[†[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'twig');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[.-[[[[[  ',
+				'  [[[[[-,[[[[[  ',
+				'  [[[[[yy[[[[[  ',
+				'  [[[yy{y[[[[[  ',
+				'  [[y[{{zy[[[[  ',
+				'  [[[y{zzy[[[[  ',
+				'  [[[yzzzzy[[[  ',
+				'  [[[555555[[[  ',
+				'  [[[445444[[[  ',
+				'  [[[[4444[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'maple syrup');
 		} // item images
 		{
 			var armorAnimation = 0.45;
@@ -15794,11 +15907,287 @@ var programCode = function (processingInstance) {
 			{
 				new GlovesAnimation('„', '…', '†', pal, armorAnimation, 'thick leather gloves animation');
 			} // gloves animations
+			new Animation([
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'      xx        ',
+					'     x{{x       ',
+					'    x{{{x       ',
+					'    x{{x xxx    ',
+					'     xx x{{{x   ',
+					'    x{{x xx{x   ',
+					'   x{{x    xx   ',
+					'   x{{x         ',
+					'    xx          ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'       xxx      ',
+					'      x{{x      ',
+					'     x{{x       ',
+					'     x{x        ',
+					'      x         ',
+					'         xxx    ',
+					'    xx    x{x   ',
+					'   x{{x   x{{x  ',
+					'   x{{x    xxx  ',
+					'   x{{x         ',
+					'    xxx         ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'        xxx     ',
+					'       x{{x     ',
+					'      x{{{x     ',
+					'      x{xx      ',
+					'      xx        ',
+					'                ',
+					'                ',
+					'          xx    ',
+					'   xxx    x{x   ',
+					'   x{x    x{x   ',
+					'   x{{x   xxx   ',
+					'    x{{x        ',
+					'     xxx        ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'        xxx     ',
+					'       x{{{x    ',
+					'       x{{x{x   ',
+					'       xxx xx   ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'          x     ',
+					'     x   x{x    ',
+					'    x{x  x{{x   ',
+					'    x{{x xxx    ',
+					'     x{{x       ',
+					'      xxx       ',
+					'                ',
+					'                ',
+					'                ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'         xxx    ',
+					'        x{{{x   ',
+					'        xx{{{x  ',
+					'          x{{x  ',
+					'           xxx  ',
+					'                ',
+					'                ',
+					'                ',
+					'         x      ',
+					'        x{x     ',
+					'     xxx xx     ',
+					'     x{{x x     ',
+					'      x{{x      ',
+					'       xxx      ',
+					'                ',
+					'                ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'          xxx   ',
+					'         x{{{x  ',
+					'          x{{x  ',
+					'           x{x  ',
+					'           x{x  ',
+					'           xx   ',
+					'                ',
+					'                ',
+					'         x      ',
+					'        xx      ',
+					'      xxxx      ',
+					'      xxxxx     ',
+					'       xxxx     ',
+					'        xx      ',
+					'                ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'           xx   ',
+					'          x{{x  ',
+					'          x{{x  ',
+					'          x{x   ',
+					'          xxx   ',
+					'                ',
+					'                ',
+					'                ',
+					'        x       ',
+					'      xx{x      ',
+					'     x{{{{x     ',
+					'     x{x{{{x    ',
+					'     xx x{{x    ',
+					'         xx     ',
+					'                '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'          xx    ',
+					'          x{x   ',
+					'         x{{x   ',
+					'         x{{x   ',
+					'          xx    ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'     x          ',
+					'    x{x   xx    ',
+					'    x{x  x{{x   ',
+					'    xx   x{{x   ',
+					'          xx    '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'         xxx    ',
+					'         x{x    ',
+					'          xx    ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'    x           ',
+					'    xx     xx   ',
+					'    xx    x{x   ',
+					'          xx    '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'          xx    ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'    x      xx   ',
+					'           x    '],
+				[
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ',
+					'                ']], pal, .75, 'death animation');
 		} // animations
 		{
 			new Enemy('slime', 'slime', 1, 4, 2, 100, 100, 1, 3, 4, 0, 4, { 'booger': 100, 'skull': 50 }, true);
-			new Enemy('living sap animation', 'living sap', 1, 4, 2, 80, 40, 4, 20, 10, 0, 4, { 'moldy cheese': 100 }, true, 'sticky sap');
-			new Enemy('rat animation', 'rat', 2, 1, 1, 20, 40, 4, 12, 4, 0, 4, { 'rat tooth': 10, 'moldy cheese': 50, 'half digested grain': 20, 'rodent fur': 60 }, true, 'nothing');
+			new Enemy('living sap animation', 'living sap', 1, 2, 15, 25, 3, 80, 60, 4, 8, 5, 0, 4, { 'twig': 45, 'dead leaf': 60, 'drop of sap': 45, 'maple syrup': 20 }, true, 'sticky sap');
+			new Enemy('rat animation', 'rat', 1, 2, 10, 15, 3, 80, 40, 5, 5, 5, 0, 5, { 'rat tooth': 10, 'moldy cheese': 50, 'half digested grain': 20, 'rodent fur': 60 }, true);
 		} // enemies
 		{
 			Player['info'] = new Alert([
@@ -15910,7 +16299,13 @@ var programCode = function (processingInstance) {
 				new Item('rodent fur', 'rodent fur', 12, 3);
 				new Item('moldy cheese', 'moldy cheese', 11, 2);
 				new Item('rat tooth', 'rat tooth', 15, 3);
+				new Item('drop of sap', 'drop of sap', 19, 4);
+				new Item('twig', 'twig', 13, 3);
+				new Item('dead leaf', 'dead leaf', 12, 2);
 			} // junk
+			{
+				new Consumable('maple syrup', 'maple syrup', 40, 7, 'sugar rush');
+			} // consumables
 			new Item('sharp axe', 'sharp axe', 36, 6);
 		} // items
 		{
@@ -16272,7 +16667,7 @@ var programCode = function (processingInstance) {
 					'                ']], pal, 0.2, 'slash animation');
 		} // ability animations
 		{
-			new Ability('slash', 'damage', 'slash', 'slash animation', 20, 10, 3);
+			new Ability('slash', 'damage', 'slash', 'slash animation', 10, 20, 20, 2.5);
 		} // abilities
 		{
 			new Npc('James Sliver', 'quest', 'humanAnimation', {
@@ -16300,14 +16695,18 @@ var programCode = function (processingInstance) {
 		} // interactings
 		{
 			new Quest('The Lost Axe', 'James Sliver', 'James Sliver', 'nothing', { 'thick leather gloves': 1 }, 25, 10, 'gather', 'sharp axe', 1,
-				'Be careful %, there have been some strange things in the forest of late. The other day I was gathering wood, and was set upon by vicious monster! I was so frightened, I dropped my axe. You look like a brave fellow! Perhaps you could recover it for me. Go southeast, you should find it lying somewhere in the forest.',
+				'Be careful %, there have been some strange things in the forest of late. The other day I was gathering wood, and was set upon by vicious monsters! I was so frightened, I dropped my axe. You look like a brave fellow! Perhaps you could recover it for me. Go southeast, you should find it lying somewhere in the forest.',
 				'Thank you %, take these gloves as a token of my gratitude! May they serve you well in future endeavours.');
+			new Quest('Sticky Situation', 'James Sliver', 'James Sliver', 'The Lost Axe', { 'blue lumberjack flannel': 1 }, 50, 25, 'kill', 'living sap', 6,
+				'Well, you retrieved my axe, but it isn\'t going to do much good if I can\'t even reach the trees! It seems that something has corrupted the trees, and even their sap is unfriendly. I need your strong blade to clear the forest of this danger! Slay the living sap so I can return to my work.',
+				'I wonder what could have caused the trees to turn against us in such a manner... Nevertheless, your service will not be forgotten, take this as a reward.');
 			new Quest('Pesky Rats', 'Matilda Sliver', 'Matilda Sliver', 'nothing', { 'frayed clothesline': 1, 'stale bread': 5 }, 25, 5, 'kill', 'rat', 3,
-				'Oh we\'ll be eaten out of house and home! When my husband isn\'t emptying our larder, the rats are. %, please go and exterminate the pesky vermin. I cannot convince James that chopping rats is as necessary as chopping wood',
-				'Thank you for your serfice %! Take these, if it wasn\'t for you they would have no doubt ended up in the stomach of a rodent.');
+				'Oh we\'ll be eaten out of house and home! When my husband isn\'t emptying our larder, the rats are. %, please go and exterminate the pesky vermin. I cannot convince James that chopping rats is as necessary as chopping wood.',
+				'Thank you for your service %! Take these, if it wasn\'t for you they would have no doubt ended up in the stomach of a rodent.');
 		} // quests
 		{
-			new Buff('sticky sap', 'sticky sap', 'speed', -1.5, 120);
+			new Buff('sticky sap', 'sticky sap', 'speed', -1.5, 10);
+			new Buff('sugar rush', 'sugar rush', 'vigor', 3, 120);
 		} // buffs
 		var loadAll = function () {
 			fill(0xFFFFFFFF);
@@ -16448,7 +16847,6 @@ var programCode = function (processingInstance) {
 			if (!loaded && width === 768) {
 				loadAll();
 			} else {
-				console.log(Player['stats']['speed']);
 				cursor('none');
 				World.draw(Player['loc']['scene']['x'], Player['loc']['scene']['y'], Player['loc']['scene']['z']);
 				Player.movement();
