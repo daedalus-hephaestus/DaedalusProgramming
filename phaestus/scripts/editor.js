@@ -170,8 +170,8 @@ var programCode = function (processingInstance) {
 			load: [],
 			loadColor: ' ',
 			image: [],
-			width: 16,
-			height: 24,
+			width: 8,
+			height: 16,
 			name: '',
 			animation: false,
 			frames: [],
@@ -503,6 +503,25 @@ var programCode = function (processingInstance) {
 			} else if (keyCode === 192) {
 				editor.meta = !editor.meta;
 				console.log(editor.meta);
+			} else if (keyCode === 219) {
+				editor.width--;
+				for(var i = 0; i < editor.image.length; i++) {
+					editor.image[i].pop();
+				}
+			} else if(keyCode === 221) {
+				editor.width++;
+				for(var i = 0; i < editor.image.length; i++) {
+					editor.image[i].push(' ');
+				}
+			} else if(keyCode === 186) {
+				editor.height--;
+				editor.image.pop();
+			} else if(keyCode === 222) {
+				editor.height++;
+				editor.image.push([]);
+				for(var i = 0; i < editor.image[0].length; i++) {
+					editor.image[editor.image.length - 1].push(' ');
+				}
 			} else {
 				editor.name += String(key);
 			}
