@@ -6790,6 +6790,31 @@ var programCode = function (processingInstance) {
                 '  CCCC„……„CCCC  ',
                 '    CCCCCCCC    '], pal, 2, 'treeA');
             new Image([
+                '       DD       ',
+                '      DFFD      ',
+                '      DEFD      ',
+                '     DDFEDD     ',
+                '     DFEEFD     ',
+                '    DEFEFEED    ',
+                '   CEDEFEDEEC   ',
+                '    CDDDCDDC    ',
+                '     CCCDDC     ',
+                '    DDCCCCDD    ',
+                '   DEDDDDDEFD   ',
+                '  DEFFEFFEFFED  ',
+                '   CDEDEDDCDC   ',
+                '    CDCDDCDC    ',
+                '   DDCCCCCCCD   ',
+                '  DEEDCCCCDEFD  ',
+                ' DEFDFFFEEFDFDD ',
+                ' CDCDCDEFFECDCC ',
+                '  CCDDDCDDDDCC  ',
+                '  CCCDDCCDDCCC  ',
+                ' CCCCC‡ˆˆ‡CCCCC ',
+                ' CCCCC‡‰ˆ‡CCCCC ',
+                '  CCCCC‡‡CCCCC  ',
+                '    CCCCCCCC    '], pal, 2, 'pine tree');
+            new Image([
                 '                ',
                 '                ',
                 '            ;   ',
@@ -7959,6 +7984,7 @@ var programCode = function (processingInstance) {
             new Tile(['wood floor', 'barrel'], 'solid', 'R');
             new Tile(['wood floor', 'wood stove'], 'solid', 'S');
             new Tile(['grass', 'well'], 'solid', 'T');
+            new Tile(['grass', 'pine tree'], 'solid', 'U');
         } // block tiles
         var loadAll = function () {
             fill(0xFFFFFFFF);

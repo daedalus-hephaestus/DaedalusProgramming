@@ -5,7 +5,7 @@ var programCode = function (processingInstance) {
 		/*jshint sub:true*/
 
 
-		var saveFile = [[1, 1, 0, 191.5, 34.5, 288, 224, false], [1, 47, ['brown bag', 'empty flour sack', 'nothing', 'nothing', 'nothing'], [{ 'stale bread': 5, 'moldy cheese': 1, }, {}, {}, {}, {}], ['nothing', 'nothing', 'nothing', 'blue lumberjack flannel', 'nothing', 'thick leather gloves', 'nothing', 'canvas pants', 'frayed clothesline', 'worn boots', 'bread knife', 'nothing', 'short brown hair', 'nothing'], ['slash', 'animate'], ['slash', 'animate', 'nothing', 'nothing', 'nothing'], {}], [100, 100, 61, 3, 350], [['Pesky Rats', 'The Lost Axe', 'Sugary Concoction', 'Sticky Situation',], [[-1, 1, 0, 6, 10]]]];
+		var saveFile = [];
 		var FRAME_RATE = 60; // frame rate
 		var PIXEL_SIZE = 2; // pixel size
 		var TILE_SIZE = 16; // normal tile size
@@ -8460,7 +8460,8 @@ var programCode = function (processingInstance) {
 							createAlert(t.x + REAL_SIZE, t.y, items[Player['inventory']['equipment'][t.tile.type]].text + 'click to dequip', 'armor' + tempArmorSlot);
 							if (mouseIsPressed && newClick) {
 								newClick = false;
-								if (Player.calcBagSpace() > 0) {
+								console.log(Player.calcBagSpace());
+								if (items[Player['inventory']['equipment'][t.tile.type]].storable()) {
 									items[Player['inventory']['equipment'][t.tile.type]].dequip();
 								}
 							}
@@ -8610,8 +8611,12 @@ var programCode = function (processingInstance) {
 						if (t.tile.type === 'close' && Hover(t.x + x, t.y + y, 32, 32)) {
 							if (mouseIsPressed && newClick) {
 								newClick = false;
-								Player['actions']['guis']['looting'] = false;
-								Player['actions']['removeInteracting'] = false;
+								if (loot.length > 1) {
+									loot.shift();
+								} else {
+									Player['actions']['guis']['looting'] = false;
+									Player['actions']['removeInteracting'] = false;
+								}
 							}
 						} // detects if a close button is clicked
 						if (t.tile.type === 'slot') {
@@ -8651,14 +8656,16 @@ var programCode = function (processingInstance) {
 					image(this.p, x, y); // draws the gui image
 					if (quest.status === 'unaccepted') { // displays the quest objectives as well as the rewards
 						quest.details.draw(x + REAL_SIZE, y + REAL_SIZE);
-						PixelText('You will be rewarded with: ', x + REAL_SIZE, y + REAL_SIZE * 11.5, GUI_TEXT_COLOR);
 						var tempKeys = Object.keys(quest.rewards);
-						for (var i = tempKeys.length - 1; i >= 0; i--) {
-							image(gui['k'].image.p, x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12);
-							items[tempKeys[i]].draw(x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12);
-							PixelNumber(quest.rewards[tempKeys[i]], x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12, GUI_TEXT_COLOR);
-							if (Hover(x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12, REAL_SIZE, REAL_SIZE)) {
-								createAlert(x + REAL_SIZE * (i + 2), y + REAL_SIZE * 12, items[tempKeys[i]].text, 'rewards' + i);
+						if (tempKeys.length > 0) {
+							PixelText('You will be rewarded with: ', x + REAL_SIZE, y + REAL_SIZE * 11.5, GUI_TEXT_COLOR);
+							for (var i = tempKeys.length - 1; i >= 0; i--) {
+								image(gui['k'].image.p, x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12);
+								items[tempKeys[i]].draw(x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12);
+								PixelNumber(quest.rewards[tempKeys[i]], x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12, GUI_TEXT_COLOR);
+								if (Hover(x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12, REAL_SIZE, REAL_SIZE)) {
+									createAlert(x + REAL_SIZE * (i + 2), y + REAL_SIZE * 12, items[tempKeys[i]].text, 'rewards' + i);
+								}
 							}
 						}
 					} else if (quest.status === 'accepted') { // displays the quest details while the quest is in progress
@@ -8690,14 +8697,16 @@ var programCode = function (processingInstance) {
 						PixelText(qText, x + REAL_SIZE, y + REAL_SIZE, GUI_TEXT_COLOR); // draws the text
 					} else if (quest.status === 'complete') {
 						quest.completion.draw(x + REAL_SIZE, y + REAL_SIZE);
-						PixelText('You will be rewarded with: ', x + REAL_SIZE, y + REAL_SIZE * 11.5, GUI_TEXT_COLOR);
 						var tempKeys = Object.keys(quest.rewards);
-						for (var i = tempKeys.length - 1; i >= 0; i--) {
-							image(gui['k'].image.p, x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12);
-							items[tempKeys[i]].draw(x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12);
-							PixelNumber(quest.rewards[tempKeys[i]], x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12, GUI_TEXT_COLOR);
-							if (Hover(x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12, REAL_SIZE, REAL_SIZE)) {
-								createAlert(x + REAL_SIZE * (i + 2), y + REAL_SIZE * 12, items[tempKeys[i]].text, 'rewards' + i);
+						if (tempKeys.length > 0) {
+							PixelText('You will be rewarded with: ', x + REAL_SIZE, y + REAL_SIZE * 11.5, GUI_TEXT_COLOR);
+							for (var i = tempKeys.length - 1; i >= 0; i--) {
+								image(gui['k'].image.p, x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12);
+								items[tempKeys[i]].draw(x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12);
+								PixelNumber(quest.rewards[tempKeys[i]], x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12, GUI_TEXT_COLOR);
+								if (Hover(x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12, REAL_SIZE, REAL_SIZE)) {
+									createAlert(x + REAL_SIZE * (i + 2), y + REAL_SIZE * 12, items[tempKeys[i]].text, 'rewards' + i);
+								}
 							}
 						}
 					}
@@ -8719,6 +8728,9 @@ var programCode = function (processingInstance) {
 									}
 								} else if (quest.status === 'complete') {
 									var tempKeys = Object.keys(quest.rewards);
+									if (tempKeys.length === 0) {
+										quest.turnIn();
+									}
 									for (var i = 0; i < tempKeys.length; i++) {
 										if (!items[tempKeys[i]].storable()) {
 											break;
@@ -8802,14 +8814,16 @@ var programCode = function (processingInstance) {
 				if (this.p !== undefined) {
 					image(this.p, x, y); // draws the gui image
 					quest.details.draw(x + REAL_SIZE, y + REAL_SIZE);
-					PixelText('You will be rewarded with: ', x + REAL_SIZE, y + REAL_SIZE * 11.5, GUI_TEXT_COLOR);
 					var tempKeys = Object.keys(quest.rewards);
-					for (var i = tempKeys.length - 1; i >= 0; i--) {
-						image(gui['k'].image.p, x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12);
-						items[tempKeys[i]].draw(x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12);
-						PixelNumber(quest.rewards[tempKeys[i]], x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12, GUI_TEXT_COLOR);
-						if (Hover(x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12, REAL_SIZE, REAL_SIZE)) {
-							createAlert(x + REAL_SIZE * (i + 2), y + REAL_SIZE * 12, items[tempKeys[i]].text, 'rewards' + i);
+					if (tempKeys.length > 0) {
+						PixelText('You will be rewarded with: ', x + REAL_SIZE, y + REAL_SIZE * 11.5, GUI_TEXT_COLOR);
+						for (var i = tempKeys.length - 1; i >= 0; i--) {
+							image(gui['k'].image.p, x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12);
+							items[tempKeys[i]].draw(x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12);
+							PixelNumber(quest.rewards[tempKeys[i]], x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12, GUI_TEXT_COLOR);
+							if (Hover(x + REAL_SIZE * (i + 1), y + REAL_SIZE * 12, REAL_SIZE, REAL_SIZE)) {
+								createAlert(x + REAL_SIZE * (i + 2), y + REAL_SIZE * 12, items[tempKeys[i]].text, 'rewards' + i);
+							}
 						}
 					}
 					for (var i = 0; i < this.tiles.length; i++) {
@@ -9012,7 +9026,7 @@ var programCode = function (processingInstance) {
 					this.curEndurance = this.vigor;
 				} // increments the enemies energy
 				if (this.curFortitude < this.fortitude) {
-					this.curFortitude += (this.vitality + 50) / 1000;
+					this.curFortitude += (this.vitality) / 1000;
 				} else if (this.curFortitude > this.fortitude) {
 					this.curFortitude = this.fortitude
 				}
@@ -9144,10 +9158,12 @@ var programCode = function (processingInstance) {
 			Item.prototype.store = function () {
 				for (var i = 1; i < 6; i++) {
 					if (Player['inventory']['bagSlots']['bag' + i] !== 'nothing') {
+						var bag = items[Player['inventory']['bagSlots']['bag' + i]];
+						var amount = Object.keys(Player['inventory']['bags']['bag' + i]).length;
 						if (Player['inventory']['bags']['bag' + i][this.name] !== undefined) {
 							Player['inventory']['bags']['bag' + i][this.name]++;
 							break;
-						} else {
+						} else if (bag.slots > amount) {
 							Player['inventory']['bags']['bag' + i][this.name] = 1;
 							break;
 						}
@@ -9308,15 +9324,13 @@ var programCode = function (processingInstance) {
 				}
 			};
 			Armor.prototype.dequip = function () {
-				if (this.storable()) {
-					Player['inventory']['equipment'][this.slot] = 'nothing';
-					for (var i = 0; i < this.statKeys.length; i++) {
-						var tempStat = this.stats[this.statKeys[i]];
-						Player['stats'][this.statKeys[i]] -= tempStat;
-						Player['animation']['armor'][this.slot] = 'nothing';
-					}
-					this.store();
+				Player['inventory']['equipment'][this.slot] = 'nothing';
+				for (var i = 0; i < this.statKeys.length; i++) {
+					var tempStat = this.stats[this.statKeys[i]];
+					Player['stats'][this.statKeys[i]] -= tempStat;
+					Player['animation']['armor'][this.slot] = 'nothing';
 				}
+				this.store();
 			};
 			Armor.prototype.useable = function () {
 				if (!Player['actions']['fighting']) {
@@ -13831,6 +13845,23 @@ var programCode = function (processingInstance) {
 				'  [[[[[[[[[[[[  ',
 				'                ',
 				'                '], pal, 2, 'bracers of the boar');
+			new Image([
+				'                ',
+				'                ',
+				'  [[[[[[[[[[[[  ',
+				'  [[[[[[[/[[[[  ',
+				'  [[[[[[//0[[[  ',
+				'  [[[[[//0//[[  ',
+				'  [[[[/00/..,[  ',
+				'  [[[/0//.-+[[  ',
+				'  [[[0/..-+[[[  ',
+				'  [[[/-.-+[[[[  ',
+				'  [[.-+++[[[[[  ',
+				'  [.[+[[[[[[[[  ',
+				'  [[+[[[[[[[[[  ',
+				'  [[[[[[[[[[[[  ',
+				'                ',
+				'                '], pal, 2, 'cutting board');
 		} // item images
 		{
 			var armorAnimation = 0.45;
@@ -16816,7 +16847,7 @@ var programCode = function (processingInstance) {
 		{
 			new Enemy('slime', 'slime', 1, 4, 2, 100, 100, 1, 3, 4, 0, 4, { 'booger': 100, 'skull': 50 }, true);
 			new Enemy('living sap animation', 'living sap', 1, 2, 15, 25, 3, 80, 60, 4, 8, 5, 0, 4, { 'twig': 45, 'dead leaf': 60, 'drop of sap': 45, 'maple syrup': 20 }, true, 'sticky sap');
-			new Enemy('rat animation', 'rat', 1, 2, 10, 15, 3, 80, 40, 5, 5, 5, 0, 5, { 'empty flour sack': 50, 'rat tooth': 10, 'moldy cheese': 50, 'half digested grain': 20, 'rodent fur': 60 }, true);
+			new Enemy('rat animation', 'rat', 1, 2, 10, 15, 3, 80, 40, 5, 5, 5, 0, 5, { 'empty flour sack': 5, 'rat tooth': 10, 'moldy cheese': 50, 'half digested grain': 20, 'rodent fur': 60 }, true);
 			new Enemy('wild boar animation', 'wild boar', 3, 5, 20, 25, 2, 100, 75, 2, 5, 5, 0, 0, { 'bracers of the boar': 5, 'tough leather leggings': 5, 'boar hide': 50, 'chipped tusk': 75, 'raw pork haunch': 65 }, false, 'gouge');
 		} // enemies
 		{
@@ -16929,6 +16960,7 @@ var programCode = function (processingInstance) {
 			} // bracers
 			{
 				new Armor('bread knife', 'bread knife', 30, 5, 'mainhand', 'nothing', { 'weapon damage': 10 });
+				new Armor('cutting board', 'cutting board', 70, 12, 'offhand', 'nothing', { 'armor': 5, 'fortitude': 10 });
 			} // weapons
 			{
 				new Food('stale bread', 'stale bread', 8, 2, 15);
@@ -17363,7 +17395,7 @@ var programCode = function (processingInstance) {
 		} // interactings
 		{
 			new Quest('The Lost Axe', 'James Sliver', 'James Sliver', 'nothing', { 'thick leather gloves': 1 }, 25, 10, 'gather', 'sharp axe', 1,
-				'Be careful %, there have been some strange things in the forest of late. The other day I was gathering wood, and was set upon by vicious monsters! I was so frightened, I dropped my axe. You look like a brave fellow! Perhaps you could recover it for me. Go southeast, you should find it lying somewhere in the forest.',
+				'Be careful %, there have been some strange things in the forest of late. The other day I was gathering wood, and was set upon by vicious monsters! I was so frightened, I dropped my axe. You look like a brave fellow! Perhaps you could recover it for me. Go southwest, you should find it lying somewhere in the forest.',
 				'Thank you %, take these gloves as a token of my gratitude! May they serve you well in future endeavours.');
 			new Quest('Sticky Situation', 'James Sliver', 'James Sliver', 'The Lost Axe', { 'blue lumberjack flannel': 1 }, 50, 25, 'kill', 'living sap', 6,
 				'Well, you retrieved my axe, but it isn\'t going to do much good if I can\'t even reach the trees! It seems that something has corrupted the trees, and even their sap is unfriendly. I need your strong blade to clear the forest of this danger! Slay the living sap so I can return to my work.',
@@ -17374,6 +17406,12 @@ var programCode = function (processingInstance) {
 			new Quest('Sugary Concoction', 'Charles Hackitt', 'Charles Hackitt', 'The Lost Axe', { 'flask of energy': 1 }, 85, 30, 'gather', 'maple syrup', 2,
 				'Something has given those trees energy, and I think I could brew something up to store and redirect all of that power. %, If you gather me some maple syrup from the slain monsters, I can create a concentrate which you can use in future battles.',
 				'There, that should do it! May this brew %, and it will help you in the many future battles you will surely face.');
+			new Quest('Empty Stomach', 'James Sliver', 'Matilda Sliver', 'Sugary Concoction', {}, 25, 0, 'speak', 'nothing', 0,
+				'%! My growling stomach tells me that the day is almost over. Go into the house and ask Matilda if supper is almost ready. I would go myself, but last time I asked, Matilda wasn\'t very pleased that I inquired before she had finished cooking the meat... I never knew she could swing a pan that fast!',
+				'How in the world does he expect me to cook a meal when he doesn\'t provide any meat! Tell him if he wants his dinner, he must first get me something to cook!');
+			new Quest('Tasty Pork', 'James Sliver', 'Matilda Sliver', 'Empty Stomach', { 'cutting board': 1 }, 90, 10, 'gather', 'raw pork haunch', 6,
+				'I\'ve been so busy dealing with those monsters, I haven\'t had time to hunt for food, perhaps you could get some meat from the wild boars southeast of here? Bring any food you get to my wife, hopefully she can use it for dinner tonight',
+				'These should cook up just fine! I don\'t have much to give you, but take this cutting board, it should help protect you against enemy\'s attacks.');
 		} // quests
 		{
 			new Buff('sticky sap', 'sticky sap', 'speed', -1.5, 10);
