@@ -301,7 +301,17 @@ var programCode = function (processingInstance) {
 				'y': 192, // the player's y-coordinate
 				'wx': 0,
 				'wy': 0,
-				'sub': false // whether the player is in a building
+				'sub': false, // whether the player is in a building
+				'dimension': {
+					'overworld': {
+						'x': 192,
+						'y': 192,
+						'wx': 0,
+						'wy': 0,
+						'sub': false
+					}
+				},
+				'current dimension': 'overworld'
 			},
 			'moveable': true, // if the player is able to move
 			'inventory': {
