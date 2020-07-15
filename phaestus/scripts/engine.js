@@ -41,6 +41,7 @@ var programCode = function (processingInstance) {
 		var animations = {}; // stores all of the animations
 		var buffs = {}; // stores the buffs
 		var tiles = {}; // stores the tiles
+		var dimensions = {};
 		var World = { maps: [], interiors: [], animations: [], transition: { value: 0, change: 0 } }; // stores the maps
 
 		// load arrays
@@ -297,20 +298,12 @@ var programCode = function (processingInstance) {
 					'y': 0
 				},
 				'fade': false,
-				'x': 192, // the player's x-coordinate
-				'y': 192, // the player's y-coordinate
+				'x': 0, // the player's x-coordinate
+				'y': 0, // the player's y-coordinate
 				'wx': 0,
 				'wy': 0,
 				'sub': false, // whether the player is in a building
-				'dimension': {
-					'overworld': {
-						'x': 192,
-						'y': 192,
-						'wx': 0,
-						'wy': 0,
-						'sub': false
-					}
-				},
+				'dimension': {},
 				'current dimension': 'overworld'
 			},
 			'moveable': true, // if the player is able to move
@@ -9625,12 +9618,13 @@ var programCode = function (processingInstance) {
 			};
 		} // ability constructors
 		{
-			var Interior = function (x, y, z, ix, iy, spawnX, spawnY, exitX, exitY, map, entities) {
+			var Interior = function (x, y, z, ix, iy, dimension, spawnX, spawnY, exitX, exitY, map, entities) {
 				this.x = x;
 				this.y = y;
 				this.z = z;
 				this.ix = ix;
 				this.iy = iy;
+				this.dimension = dimension;
 				this.exitX = exitX;
 				this.exitY = exitY;
 				this.spawnX = spawnX;
@@ -9747,10 +9741,11 @@ var programCode = function (processingInstance) {
 					}
 				}
 			};
-			var Screen = function (x, y, z, map, entities) {
+			var Screen = function (x, y, z, dimension, map, entities) {
 				this.x = x;
 				this.y = y;
 				this.z = z;
+				this.dimension = dimension;
 				this.map = map;
 				this.entities = entities;
 				if (entities === undefined) {
@@ -9866,6 +9861,16 @@ var programCode = function (processingInstance) {
 				this.p = this.p.get();
 				this.t = this.t.get();
 				World.maps[this.x][this.y][this.z] = this;
+
+				if (Player['loc']['dimension'][this.dimension] === undefined) {
+					Player['loc']['dimension'][this.dimension] = {
+						'x': 192,
+						'y': 192,
+						'wx': 0,
+						'wy': 0,
+						'sub': false
+					};
+				}
 			};
 			Screen.prototype.reset = function () {
 				for (var i = 0; i < this.storedEntities.length; i++) {
@@ -10263,6 +10268,26 @@ var programCode = function (processingInstance) {
 				}
 			};
 		} // map constructors
+		{
+			var Dimension = function (name, sceneX, sceneY, sceneZ, x, y) {
+				this.name = name;
+				this.sceneX = sceneX;
+				this.sceneY = sceneY;
+				this.sceneZ = sceneZ;
+				this.x = x;
+				this.y = y;
+				dimensions[this.name] = {
+					name: this.name,
+					spawnScene: {
+						x: this.sceneX,
+						y: this.sceneY,
+						z: this.sceneZ
+					},
+					x: this.x,
+					y: this.y
+				};
+			};
+		} // dimension constructor
 		{
 			var Buff = function (name, image, stat, amount, duration) {
 				this.name = name;
@@ -16996,7 +17021,7 @@ var programCode = function (processingInstance) {
 			new Item('sharp axe', 'sharp axe', 36, 6);
 		} // items
 		{
-			new Screen(0, 0, 0, [
+			new Screen(0, 0, 0, 'overworld', [
 				'$$$$$$$$$$$$$$$$$$$$$$$$',
 				'$$$(!($$$($$$456$$$$$$($',
 				'$$$!!!!$$$$$$.0/$$!$$$$$',
@@ -17022,7 +17047,7 @@ var programCode = function (processingInstance) {
 						{ 'name': 'Outfitter Eric', 'x': 19, 'y': 4 }
 					]
 				});
-			new Screen(1, 0, 0, [
+			new Screen(1, 0, 0, 'overworld', [
 				'$$$$$$$$$$$$$$$$$$$$$$$$',
 				'$$$$$$$$$$$$$$$$$($$$$$$',
 				'$$$$($$$$$$($$$$$$!$$$$$',
@@ -17039,7 +17064,7 @@ var programCode = function (processingInstance) {
 				'!!EEEE%!!!$($!&!$$$!!$$$',
 				'!!!E!%!!!!!#!&%&!$!!$($$',
 				'!!!!!!!!!!!!!!!!!!!$$$$$']);
-			new Screen(-1, 0, 0, [
+			new Screen(-1, 0, 0, 'overworld', [
 				'$$$$$$$$$$$$$$$$$$$$$$$$',
 				'$($$$$$($$$$$$$$$($$$($$',
 				'$$$$!$($$$$($$$$$$$!$$$$',
@@ -17056,7 +17081,7 @@ var programCode = function (processingInstance) {
 				'$$!!!!!#(!%&&!$$$E!!&%!!',
 				'$($!!!!!!!&%!!!$EEF!!(!!',
 				'$$$$!!!!!!!!!!!!!!!!!!!!']);
-			new Screen(-1, 1, 0, [
+			new Screen(-1, 1, 0, 'overworld', [
 				'$$$$!!!!!!&!!!!!!!!!!!!!',
 				'$$$#!!!!!%&%!!$!!!$$!!!!',
 				'$$(!!!!$!!!&!!!!!!$!!!!!',
@@ -17088,7 +17113,7 @@ var programCode = function (processingInstance) {
 						{ 'name': 'living sap', 'x': 15, 'y': 2 },
 					]
 				});
-			new Screen(0, 1, 0, [
+			new Screen(0, 1, 0, 'overworld', [
 				'!!!!!!!!!!!!!!!!!!!!!!!!',
 				'!!!!E!!&%!EE!!&!!E!!!!!!',
 				'!!!$EE!(&EEEE!&%EEF!#$!!',
@@ -17105,7 +17130,7 @@ var programCode = function (processingInstance) {
 				'($$$$!#$$$$!$$$$$($$#$$$',
 				'$$$$$$($$$$$$$$$$$$$$$$$',
 				'($$$($$$$$$$$($$$$$$$$($']);
-			new Screen(1, 1, 0, [
+			new Screen(1, 1, 0, 'overworld', [
 				'!!!!!!!!!&&!!!!!!!!$$$$$',
 				'!!!!E!!!!!%&%!!$!&&!($$$',
 				'!!!EE#!!FF!!!!$$$!%!#$$(',
@@ -17134,7 +17159,7 @@ var programCode = function (processingInstance) {
 						{ 'name': 'wild boar', 'x': 18, 'y': 2 },
 					]
 				});
-			new Interior(0, 0, 0, 9, 6, 11, 9, 11, 10, [
+			new Interior(0, 0, 0, 9, 6, 'overworld', 11, 9, 11, 10, [
 				'                        ',
 				'                        ',
 				'                        ',
@@ -17155,7 +17180,7 @@ var programCode = function (processingInstance) {
 					{ 'name': 'Matilda Sliver', 'x': 11, 'y': 8 }
 				]
 			});
-			new Interior(0, 0, 0, 14, 3, 11, 9, 11, 10, [
+			new Interior(0, 0, 0, 14, 3, 'overworld', 11, 9, 11, 10, [
 				'                        ',
 				'                        ',
 				'                        ',
@@ -17179,6 +17204,9 @@ var programCode = function (processingInstance) {
 				]
 			})
 		} // maps
+		{
+			new Dimension('overworld', 0, 0, 0, 288, 256);
+		} // dimensions
 		{
 			new Animation([
 				[
@@ -17557,8 +17585,11 @@ var programCode = function (processingInstance) {
 					items['canvas pants'].use();
 					items['bread knife'].use();
 					abilities['slash'].learn();
-					Player['loc']['x'] = 288;
-					Player['loc']['y'] = 256;
+					Player['loc']['x'] = dimensions[Player['loc']['current dimension']].x;
+					Player['loc']['y'] = dimensions[Player['loc']['current dimension']].x;
+					Player['loc']['scene']['x'] = dimensions[Player['loc']['current dimension']].spawnScene.x;
+					Player['loc']['scene']['y'] = dimensions[Player['loc']['current dimension']].spawnScene.y;
+					Player['loc']['scene']['z'] = dimensions[Player['loc']['current dimension']].spawnScene.z;
 				}
 				loaded = true;
 			}
