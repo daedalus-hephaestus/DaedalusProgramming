@@ -5,7 +5,7 @@ var programCode = function (processingInstance) {
 		/*jshint sub:true*/
 
 
-		var saveFile = [];
+		var saveFile = [[0,0,0,79.5,224,288,233.5,'overworld',false],[0,49,['brown bag','nothing','nothing','nothing','nothing'],[{'dead leaf': 2,'drop of sap': 1,'flask of energy': 1,},{},{},{},{}],['nothing','nothing','nothing','ragged leather jerkin','nothing','thick leather gloves','nothing','canvas pants','frayed clothesline','worn boots','bread knife','nothing','short brown hair','nothing'],['slash'],['slash','nothing','nothing','nothing','nothing'],{'Sticky Situation': 6}],[76.0999999999948,100,180,2,200],[['The Lost Axe','Pesky Rats','Sugary Concoction',],[[-1,1,0,6,10,'overworld']]],[['overworld',0,0,0,79.5,224,288,233.5,false]]];
 		var FRAME_RATE = 60; // frame rate
 		var PIXEL_SIZE = 2; // pixel size
 		var TILE_SIZE = 16; // normal tile size
@@ -31,7 +31,8 @@ var programCode = function (processingInstance) {
 			'enemy': {},
 			'vendor': {},
 			'interacting': {},
-			'quest': {}
+			'quest': {},
+			'portal': {}
 		}; // stores all entities (vendor, enemy, interacting, quest)
 		var abilities = {}; // stores all of the abilities
 		var quests = {}; // stores all of the quests
@@ -42,7 +43,7 @@ var programCode = function (processingInstance) {
 		var buffs = {}; // stores the buffs
 		var tiles = {}; // stores the tiles
 		var dimensions = {};
-		var World = { maps: [], interiors: [], animations: [], transition: { value: 0, change: 0 } }; // stores the maps
+		var World = { maps: {}, interiors: [], animations: [], transition: { value: 0, change: 0 } }; // stores the maps
 
 		// load arrays
 		var load = {
@@ -262,7 +263,6 @@ var programCode = function (processingInstance) {
 			if (damage < 0) {
 				damage = 0;
 			}
-			console.log(damage);
 			return damage;
 		} // calculates the damage based on 5 stats
 		frameRate(FRAME_RATE);
@@ -292,19 +292,19 @@ var programCode = function (processingInstance) {
 					'z': 0 // the z-coordinate of the scene the player is in
 				},
 				'facing': 'down', // which direction the player is facing
-				'shifting': false,
+				'shifting': false, // whether the player is shifting to another screen
 				'transition': {
 					'x': 0,
 					'y': 0
-				},
+				}, // the offset for the screen-slide transition
 				'fade': false,
 				'x': 0, // the player's x-coordinate
 				'y': 0, // the player's y-coordinate
-				'wx': 0,
-				'wy': 0,
+				'wx': 0, // the player's x-coordinate in the world
+				'wy': 0,  // the player's y-coordinate in the world
 				'sub': false, // whether the player is in a building
-				'dimension': {},
-				'current dimension': 'overworld'
+				'dimension': {}, // stores the players coordinates in each dimension
+				'current dimension': 'overworld' // the players current dimension
 			},
 			'moveable': true, // if the player is able to move
 			'inventory': {
@@ -394,22 +394,20 @@ var programCode = function (processingInstance) {
 					'3': { 'max': 0, 'cur': 0, 'change': 0 },
 					'4': { 'max': 0, 'cur': 0, 'change': 0 },
 					'5': { 'max': 0, 'cur': 0, 'change': 0 }
-				},
-				'fighting': false,
-				'completedQuests': [],
-				'used': [],
+				}, // the cooldowns for each of the player's abilities
+				'fighting': false, // whether the player is fighting
+				'completedQuests': [], // stores which quests the player has completed
+				'used': [], // stores the non-renewable interactings that have been used
 				'hover': {
 					'enemy': false,
 					'quest': false,
 					'interacting': false,
 					'vendor': false
-				},
-				'cursor': 'default',
-				'removeInteracting': false
+				}, // changes the mouse based on what the player is hovering over
+				'cursor': 'default', // sets the cursor
+				'removeInteracting': false // set to true to remove an interacting when the lootbox is closed
 			},
-			'buffs': {
-
-			},
+			'buffs': {}, // stores the player's buffs
 			'size': {
 				'x': 16, // the width of the player
 				'y': 24, // the height
@@ -513,10 +511,12 @@ var programCode = function (processingInstance) {
 				for (var i = 0; i < tempGuis.length; i++) {
 					Player['actions']['guis'][tempGuis[i]] = false;
 				}
-			};
+			}; // closes all of the guis
+
 			if (keys[81] && newKey) {
 				Player.closeGuis();
 			} // closes all guis when "q" is pressed
+
 			// detects if the player is looting something
 			if (Player['actions']['guis']['looting'] !== false) {
 				if (Player['actions']['guis']['looting'].length === 0) {
@@ -549,14 +549,14 @@ var programCode = function (processingInstance) {
 							tempBags.close++;
 						}
 					}
-				}
-				if (tempBags.open >= tempBags.close) {
+				} // figures out if more bags are open or closed
+				if (tempBags.open >= tempBags.close) { // if more bags are open close them
 					for (var i = 1; i < 6; i++) {
 						if (Player['inventory']['bagSlots']['bag' + i] !== 'nothing') {
 							Player['actions']['guis']['bag' + i] = false;
 						}
 					}
-				} else {
+				} else { // if fewer bags are open, open the rest
 					for (var i = 1; i < 6; i++) {
 						if (Player['inventory']['bagSlots']['bag' + i] !== 'nothing') {
 							Player['actions']['guis']['bag' + i] = true;
@@ -606,7 +606,7 @@ var programCode = function (processingInstance) {
 			if (Player['inventory']['silver'] < 0) {
 				Player['inventory']['gold'] -= 1;
 				Player['inventory']['silver'] += 100;
-			}
+			} // if the player's silver is less than 0, convert 1 gold into 100 silver
 
 			if (Player['stats']['xp'] >= Player['stats']['nextLevel']) {
 				Player['stats']['xp'] -= Player['stats']['nextLevel'];
@@ -617,13 +617,14 @@ var programCode = function (processingInstance) {
 			var tempBuffs = Object.keys(Player['buffs']);
 			for (var i = 0; i < tempBuffs.length; i++) {
 				var buff = buffs[tempBuffs[i]];
-				buff.draw(REAL_SIZE * i, REAL_SIZE, Player['buffs'][tempBuffs[i]]);
-				Player['buffs'][tempBuffs[i]]--;
+				buff.draw(REAL_SIZE * i, REAL_SIZE, Player['buffs'][tempBuffs[i]]); // draws the buff icon by the player's bar
+				Player['buffs'][tempBuffs[i]]--; // decrements the buff's tiemr
 				if (Player['buffs'][tempBuffs[i]] <= 0) {
 					buff.remove();
-				}
-			}
-			var actionKeys = testKeys();
+				} // if the buff's cooldown is less than 0, remove the buff
+			} // loops through the buffs on a player
+
+			var actionKeys = testKeys(); // detects which key (1-5) is being pressed, if any
 			if (actionKeys !== false && !Player['actions']['guis']['spellBook']) {
 				if (Player['inventory']['abilityBar'][actionKeys - 48] !== 'nothing') {
 					var a = abilities[Player['inventory']['abilityBar'][actionKeys - 48]]; // stores which ability is being used
@@ -632,7 +633,7 @@ var programCode = function (processingInstance) {
 						if (a.type === 'buff' || a.type === 'heal') {
 							if (a.type === 'buff') {
 								buffs[a.min].give();
-							}
+							} // gives a buff if the ability type is a buff
 							cooldown['change'] = 1; // start the cooldown
 							a.animation.reset(); // resets the animation before drawing it
 							World['animations'].push({
@@ -640,7 +641,7 @@ var programCode = function (processingInstance) {
 								x: Player['loc']['x'],
 								y: Player['loc']['y'] - a.animation.height
 							}); // adds an animation to the world animation list
-							Player['stats']['curEndurance'] -= a.cost;
+							Player['stats']['curEndurance'] -= a.cost; // decreases the player's energy
 						}
 					} // if the cooldown is full and the player has enough energy
 				} // if there is an ability in the slot
@@ -649,7 +650,8 @@ var programCode = function (processingInstance) {
 			for (var i = 0; i < popupKeys.length; i++) {
 				var p = popupKeys[i];
 				popups[p].draw();
-			}
+			} // draws all of the information popups
+
 			if (Player['actions']['hover']['enemy']) {
 				Player['actions']['cursor'] = 'enemyCursor';
 			} else if (Player['actions']['hover']['quest']) {
@@ -660,8 +662,9 @@ var programCode = function (processingInstance) {
 				Player['actions']['cursor'] = 'interactingCursor';
 			} else {
 				Player['actions']['cursor'] = 'defaultCursor';
-			}
-			images[Player['actions']['cursor']].draw(round(mouseX / PIXEL_SIZE) * PIXEL_SIZE, round(mouseY / PIXEL_SIZE) * PIXEL_SIZE);
+			} // changes the cursor based on what is being hovered over
+
+			images[Player['actions']['cursor']].draw(round(mouseX / PIXEL_SIZE) * PIXEL_SIZE, round(mouseY / PIXEL_SIZE) * PIXEL_SIZE); // draws the cursor
 		};
 		Player.movement = function () {
 			if (Player['moveable']) {
@@ -733,20 +736,20 @@ var programCode = function (processingInstance) {
 			}
 			var loc = Player['loc']['scene']
 			if (Player['colBox']['y'] + REAL_SIZE / 2 < 0 && Player['actions']['moving']['up']) {
-				World.maps[loc['x']][loc['y'] - 1][loc['z']].reset();
+				World.maps[Player['loc']['current dimension']][loc['x']][loc['y'] - 1][loc['z']].reset();
 				Player['loc']['shifting'] = 'up';
 			} // detects when the player goes off of the top of the screen
 			if (Player['colBox']['y'] + REAL_SIZE / 2 > height - REAL_SIZE && Player['actions']['moving']['down']) {
 				Player['loc']['shifting'] = 'down';
-				World.maps[loc['x']][loc['y'] + 1][loc['z']].reset();
+				World.maps[Player['loc']['current dimension']][loc['x']][loc['y'] + 1][loc['z']].reset();
 			} // detects when the player goes off of the bottom of the screen
 			if (Player['colBox']['x'] + REAL_SIZE / 2 < 0 && Player['actions']['moving']['left']) {
 				Player['loc']['shifting'] = 'left';
-				World.maps[loc['x'] - 1][loc['y']][loc['z']].reset();
+				World.maps[Player['loc']['current dimension']][loc['x'] - 1][loc['y']][loc['z']].reset();
 			} // detects when the player goes off the left of the screen
 			if (Player['colBox']['x'] + REAL_SIZE / 2 > width && Player['actions']['moving']['right']) {
 				Player['loc']['shifting'] = 'right';
-				World.maps[loc['x'] + 1][loc['y']][loc['z']].reset();
+				World.maps[Player['loc']['current dimension']][loc['x'] + 1][loc['y']][loc['z']].reset();
 			} // detects when the player goes off the right of the screen
 			var temp = {
 				x: Player['loc']['scene']['x'],
@@ -801,6 +804,7 @@ var programCode = function (processingInstance) {
 		}; // calculates how many available slots are in the player's inventory
 		Player.generateSave = function () {
 			var tempSave = '[';
+
 			var sub;
 			if (!Player['loc']['sub']) {
 				sub = false;
@@ -809,7 +813,7 @@ var programCode = function (processingInstance) {
 					Player['loc']['sub'].ix,
 					Player['loc']['sub'].iy
 				] + ']';
-			}
+			} // sets whether the player is inside of a building for th esave file
 			var coordinates = '[' + [
 				Player['loc']['scene']['x'],
 				Player['loc']['scene']['y'],
@@ -818,8 +822,9 @@ var programCode = function (processingInstance) {
 				Player['loc']['y'],
 				Player['loc']['wx'],
 				Player['loc']['wy'],
+				'\'' + Player['loc']['current dimension'] + '\'',
 				sub
-			] + '],';
+			] + '],'; // sets the player's coordinates for the save file
 			var bagItems = [
 				'{',
 				'{',
@@ -829,15 +834,16 @@ var programCode = function (processingInstance) {
 			];
 			for (var i = 1; i < 6; i++) {
 				if (Player['inventory']['bagSlots']['bag' + i] !== 'nothing') {
-					var tempItems = Object.keys(Player['inventory']['bags']['bag' + i]);
+					var tempItems = Object.keys(Player['inventory']['bags']['bag' + i]); // gets the names of all of the player's items
 					for (var j = 0; j < tempItems.length; j++) {
 						var name = tempItems[j];
-						var num = Player['inventory']['bags']['bag' + i][tempItems[j]]
-						bagItems[i - 1] += '\'' + name + '\'' + ': ' + num + ',';
-					}
+						var num = Player['inventory']['bags']['bag' + i][tempItems[j]] // the number of that item the player owns
+						bagItems[i - 1] += '\'' + name + '\'' + ': ' + num + ','; // converts into a string
+					} // loops through all of the items
 				}
 				bagItems[i - 1] += '}';
-			}
+			} // loops through the player's inventory
+
 			var playerAbilities = [];
 			var tempAbilities = Object.keys(Player['inventory']['abilities']);
 			for (var i = 0; i < tempAbilities.length; i++) {
@@ -845,27 +851,36 @@ var programCode = function (processingInstance) {
 				if (Player['inventory']['abilities'][a]) {
 					playerAbilities.push('\'' + a + '\'');
 				}
-			}
+			} // loops through the player's learned abilities and adds them to the save file
+
 			var playerQuests = [];
 			var tempQuests = Object.keys(Player['inventory']['quests']);
 			for (var i = 0; i < tempQuests.length; i++) {
 				var q = tempQuests[i];
 				if (Player['inventory']['abilities'][a]) {
-					playerQuests.push('\'' + q + '\': ' + Player['inventory']['quests'][q]);
+					playerQuests.push('\'' + q + '\': ' + Player['inventory']['quests'][q]); // adds the quest name and progress
 				}
-			}
+			} // loops through the player's quests and adds them to the save file
 
 
 			var completedQuests = '';
 			for (var i = 0; i < Player['actions']['completedQuests'].length; i++) {
 				completedQuests += '\'' + Player['actions']['completedQuests'][i] + '\',';
-			}
+			} // adds the completed quests to the save file
 
 			var used = [];
 			for (var i = 0; i < Player['actions']['used'].length; i++) {
-				used.push('[' + Player['actions']['used'][i] + ']');
-			}
-			console.log(Player['actions']['used']);
+				var temp = '';
+				for(var j = 0; j < Player['actions']['used'][i].length; j++) {
+					if(typeof Player['actions']['used'][i][j] === "string") {
+						temp += '\'' + Player['actions']['used'][i][j] + '\'';
+					} else {
+						temp += Player['actions']['used'][i][j] + ',';
+					}
+				}
+				used.push('[' + temp + ']');
+			} // adds the used interactings to the save file
+
 			var inventory = '[' + [
 				Player['inventory']['gold'],
 				Player['inventory']['silver'],
@@ -902,59 +917,104 @@ var programCode = function (processingInstance) {
 					'\'' + Player['inventory']['abilityBar']['5'] + '\'',
 				] + ']',
 				'{' + playerQuests + '}',
-			] + '],';
+			] + '],'; // adds bags, equipment, abilities, and quests to the save file
+
 			var stats = '[' + [
 				Player['stats']['curEndurance'],
 				Player['stats']['curFortitude'],
 				Player['stats']['xp'],
 				Player['stats']['level'],
 				Player['stats']['nextLevel']
-			] + '],';
+			] + '],'; // adds the player's non-gear dependent stats to the save file
+
 			var actions = '[' + [
 				'[' + completedQuests + ']',
 				'[' + used + ']'
-			] + ']';
+			] + '],'; // adds the completed quests and used interactings to the actions array of the save file
+
+			var savedDimensions = [];
+			var dimensionKeys = Object.keys(Player['loc']['dimension']);
+			for (var i = 0; i < dimensionKeys.length; i++) {
+				if (Player['loc']['current dimension'] !== dimensionKeys[i]) { // updates the dimension that the player is currently in
+					var d = Player['loc']['dimension'][dimensionKeys[i]];
+					var tempSub;
+					if (!d.sub) {
+						tempSub = d.sub;
+					} else {
+						tempSub = '[' + [
+							d.sub.ix,
+							d.sub.iy
+						] + ']';
+					} // sets whether the player is in an interior
+					savedDimensions.push('[' + [
+						'\'' + dimensionKeys[i] + '\'',
+						d.sx,
+						d.sy,
+						d.sz,
+						d.x,
+						d.y,
+						d.wx,
+						d.wy,
+						tempSub
+					] + ']'); // sets spawnpoint, current coordinates, and world coordinates of the dimension
+				} else { // updates the other dimensions to the save file
+					savedDimensions.push('[' + [
+						'\'' + Player['loc']['current dimension'] + '\'',
+						Player['loc']['scene']['x'],
+						Player['loc']['scene']['y'],
+						Player['loc']['scene']['z'],
+						Player['loc']['x'],
+						Player['loc']['y'],
+						Player['loc']['wx'],
+						Player['loc']['wy'],
+						sub
+					] + ']');
+				}
+			} // loops through the dimensions
+
+			savedDimensions = '[' + savedDimensions + ']'; // adds the dimensions to the save file
 			tempSave += coordinates;
 			tempSave += inventory;
 			tempSave += stats;
 			tempSave += actions;
+			tempSave += savedDimensions;
 			tempSave += '];'
-			return tempSave;
+			return tempSave; // return the completed save file as a string
 		};
 		Player.loadSave = function () {
-			Player['loc']['scene']['x'] = saveFile[0][0];
-			Player['loc']['scene']['y'] = saveFile[0][1];
-			Player['loc']['scene']['z'] = saveFile[0][2];
-			Player['loc']['x'] = saveFile[0][3];
-			Player['loc']['y'] = saveFile[0][4];
-			Player['loc']['wx'] = saveFile[0][5];
-			Player['loc']['wy'] = saveFile[0][6];
-			if (!saveFile[0][7]) {
-				Player['loc']['sub'] = saveFile[0][7];
-			} else {
-				var w = World.maps[saveFile[0][0]][saveFile[0][1]][saveFile[0][2]];
-				for (var i = 0; i < w.tiles.length; i++) {
-					if (saveFile[0][7][0] === w.tiles[i].interior.ix && saveFile[0][7][1] === w.tiles[i].interior.iy) {
-						Player['loc']['sub'] = w.tiles[i].interior;
+			Player['loc']['scene']['x'] = saveFile[0][0]; // loads the player's x-coordinate for the screen
+			Player['loc']['scene']['y'] = saveFile[0][1]; // loads the player's y-coordinate for the screen
+			Player['loc']['scene']['z'] = saveFile[0][2]; // loads the player's z-coordinate for the screen
+			Player['loc']['x'] = saveFile[0][3]; // loads the player's x-coordinate
+			Player['loc']['y'] = saveFile[0][4]; // loads the player's y-coordinate
+			Player['loc']['wx'] = saveFile[0][5]; // loads the player's world x-coordinate
+			Player['loc']['wy'] = saveFile[0][6]; // loads the player's world y-coordinate
+			Player['loc']['current dimension'] = saveFile[0][7]; // loads the player's current dimension
+			if (!saveFile[0][8]) { // if the player is not in an interior
+				Player['loc']['sub'] = saveFile[0][8];
+			} else { // if the player is in an interior
+				var w = World.maps[Player['loc']['current dimension']][saveFile[0][0]][saveFile[0][1]][saveFile[0][2]]; // locates which screen the interior is located in
+				for (var i = 0; i < w.tiles.length; i++) { // locates which tile contains the interior
+					if (saveFile[0][8][0] === w.tiles[i].interior.ix && saveFile[0][8][1] === w.tiles[i].interior.iy) {
+						Player['loc']['sub'] = w.tiles[i].interior; // sets the player's interior to the saved interior
 					}
 				}
 			}
 
-			Player['inventory']['gold'] = saveFile[1][0];
-			Player['inventory']['silver'] = saveFile[1][1];
-			for (var i = 1; i < 6; i++) {
-				Player['inventory']['bagSlots']['bag' + i] = saveFile[1][2][i - 1];
-				Player['inventory']['bags']['bag' + i] = saveFile[1][3][i - 1];
-				console.log(saveFile[1][6][i - 1]);
+			Player['inventory']['gold'] = saveFile[1][0]; // loads the player's gold
+			Player['inventory']['silver'] = saveFile[1][1]; // loads the player's silver
+
+			for (var i = 1; i < 6; i++) { // loops through the bags and ability bar
+				Player['inventory']['bagSlots']['bag' + i] = saveFile[1][2][i - 1]; // loads the players equipped bags
+				Player['inventory']['bags']['bag' + i] = saveFile[1][3][i - 1]; // loads all of the players items into their corresponsding bags
 				if (saveFile[1][6][i - 1] !== 'nothing') {
 					abilities[saveFile[1][6][i - 1]].equip(i);
-				}
+				} // equips the abilities
 				Player['inventory']['abilityBar'][i] = saveFile[1][6][i - 1];
 			}
 			var tempKeys = Object.keys(Player['inventory']['equipment']);
 			for (var i = 0; i < tempKeys.length; i++) {
 				if (saveFile[1][4][i] !== 'nothing') {
-					console.log(saveFile[1][4][i]);
 					items[saveFile[1][4][i]].use();
 				}
 				Player['inventory']['equipment'][tempKeys[i]] = saveFile[1][4][i];
@@ -985,9 +1045,11 @@ var programCode = function (processingInstance) {
 			}
 			Player['actions']['used'] = saveFile[3][1];
 			for (var i = 0; i < saveFile[3][1].length; i++) {
-				var w = World.maps[saveFile[3][1][i][0]][saveFile[3][1][i][1]][saveFile[3][1][i][2]];
+				var d = saveFile[3][1][i][saveFile[3][1][i].length - 1];
+				console.log(d);
+				var w = World.maps[d][saveFile[3][1][i][0]][saveFile[3][1][i][1]][saveFile[3][1][i][2]];
 				var ent = saveFile[3][1][i];
-				if (ent.length > 5) {
+				if (ent.length > 6) {
 					for (var j = 0; j < w.tiles.length; j++) {
 						if (ent[3] === w.tiles[j].x / REAL_SIZE && ent[4] === w.tiles[j].y / REAL_SIZE) {
 							var t = w.tiles[j].interior;
@@ -1002,6 +1064,26 @@ var programCode = function (processingInstance) {
 					for (var j = 0; j < w.storedEntities.length; j++) {
 						if (ent[3] === w.storedEntities[j].x / REAL_SIZE && ent[4] === w.storedEntities[j].y / REAL_SIZE) {
 							w.storedEntities[j].alive = false;
+						}
+					}
+				}
+			}
+			for (var i = 0; i < saveFile[4].length; i++) {
+				var d = Player['loc']['dimension'][saveFile[4][i][0]];
+				d.sx = saveFile[4][i][1];
+				d.sy = saveFile[4][i][2];
+				d.sz = saveFile[4][i][3];
+				d.x = saveFile[4][i][4];
+				d.y = saveFile[4][i][5];
+				d.wx = saveFile[4][i][6];
+				d.wy = saveFile[4][i][7];
+				if (!saveFile[4][i][8]) {
+					d.y = saveFile[4][i][8];
+				} else {
+					var w = World.maps[saveFile[4][i][0]][saveFile[4][i][1]][saveFile[4][i][2]][saveFile[4][i][3]];
+					for (var j = 0; j < w.tiles.length; j++) {
+						if (saveFile[4][i][8][0] === w.tiles[j].interior.ix && saveFile[4][i][8][1] === w.tiles[j].interior.iy) {
+							d.sub = w.tiles[j].interior;
 						}
 					}
 				}
@@ -8385,7 +8467,7 @@ var programCode = function (processingInstance) {
 					if (t.tile.type === 'spellbook' && hover) {
 						createAlert(t.x + x, t.y + y - REAL_SIZE, 'Click to view spells', 'spellBookGui');
 						if (mouseIsPressed && newClick) {
-							if (!Player['actions']['guis']['spellBookGui']) {
+							if (!Player['actions']['guis']['spellBook']) {
 								Player.closeGuis();
 							}
 							newClick = false;
@@ -8463,7 +8545,6 @@ var programCode = function (processingInstance) {
 							createAlert(t.x + REAL_SIZE, t.y, items[Player['inventory']['equipment'][t.tile.type]].text + 'click to dequip', 'armor' + tempArmorSlot);
 							if (mouseIsPressed && newClick) {
 								newClick = false;
-								console.log(Player.calcBagSpace());
 								if (items[Player['inventory']['equipment'][t.tile.type]].storable()) {
 									items[Player['inventory']['equipment'][t.tile.type]].dequip();
 								}
@@ -9050,7 +9131,7 @@ var programCode = function (processingInstance) {
 					this.curCooldown = this.cooldown; // reset the cooldown
 				}
 				var actionKeys = testKeys();
-				if (actionKeys !== false) {
+				if (actionKeys !== false && !Player['actions']['guis']['spellBook']) {
 					if (Player['inventory']['abilityBar'][actionKeys - 48] !== 'nothing') {
 						var a = abilities[Player['inventory']['abilityBar'][actionKeys - 48]]; // stores which ability is being used
 						var cooldown = Player['actions']['cooldown'][actionKeys - 48]; // stores the corresponding cooldown
@@ -9201,10 +9282,7 @@ var programCode = function (processingInstance) {
 				if (Player['inventory']['bags'][destination][this.name] !== undefined) {
 					Player['inventory']['bags'][destination][this.name] += amount;
 				} else if (availableSlots > 0) {
-					console.log(availableSlots);
-					console.log(Player['inventory']['bags'][destination]);
 					Player['inventory']['bags'][destination][this.name] = amount;
-					console.log(Player['inventory']['bags'][destination]);
 				}
 			};
 			Item.prototype.storable = function () {
@@ -9531,6 +9609,26 @@ var programCode = function (processingInstance) {
 			};
 			var QuestGiverCheck = function (name, open) {
 				var entity = entities['quest'][name];
+				if (entity.completes !== undefined) {
+					for (var i = 0; i < entity.completes.length; i++) {
+						var q = entity.completes[i];
+						q = quests[q];
+						if (!Player['actions']['completedQuests'].includes(q.name)) {
+							if (q.status !== 'unaccepted') {
+								if (open) {
+									Player.closeGuis();
+									Player['actions']['guis']['quest'] = q.name;
+								} else {
+									if (q.status === 'complete') {
+										return 'complete';
+									} else {
+										return 'incomplete'
+									}
+								}
+							}
+						}
+					}
+				}
 				if (entity.gives !== undefined) {
 					for (var i = 0; i < entity.gives.length; i++) {
 						var q = entity.gives[i];
@@ -9554,26 +9652,6 @@ var programCode = function (processingInstance) {
 										Player['actions']['guis']['quest'] = q.name;
 									} else {
 										return 'available';
-									}
-								}
-							}
-						}
-					}
-				}
-				if (entity.completes !== undefined) {
-					for (var i = 0; i < entity.completes.length; i++) {
-						var q = entity.completes[i];
-						q = quests[q];
-						if (!Player['actions']['completedQuests'].includes(q.name)) {
-							if (q.status !== 'unaccepted') {
-								if (open) {
-									Player.closeGuis();
-									Player['actions']['guis']['quest'] = q.name;
-								} else {
-									if (q.status === 'complete') {
-										return 'complete';
-									} else {
-										return 'incomplete'
 									}
 								}
 							}
@@ -9636,7 +9714,8 @@ var programCode = function (processingInstance) {
 						enemy: [],
 						interacting: [],
 						quest: [],
-						vendor: []
+						vendor: [],
+						portal: []
 					};
 				} // if the entities variable is undefined, fill it with empty arrays
 				load.interiors.push(this);
@@ -9753,7 +9832,8 @@ var programCode = function (processingInstance) {
 						enemy: [],
 						interacting: [],
 						quest: [],
-						vendor: []
+						vendor: [],
+						portal: []
 					};
 				} // if the entities variable is undefined, fill it with empty arrays
 				load.screens.push(this);
@@ -9764,11 +9844,14 @@ var programCode = function (processingInstance) {
 				this.tiles = []; // stores the tiles
 				this.storedEntities = []; // stores the entities
 				this.animations = []; // stores the animations
-				if (World.maps[this.x] === undefined) {
-					World.maps[this.x] = [];
+				if (World.maps[this.dimension] === undefined) {
+					World.maps[this.dimension] = [];
+				}
+				if (World.maps[this.dimension][this.x] === undefined) {
+					World.maps[this.dimension][this.x] = [];
 				} // creates a new x array if it is not defined
-				if (World.maps[this.x][this.y] === undefined) {
-					World.maps[this.x][this.y] = [];
+				if (World.maps[this.dimension][this.x][this.y] === undefined) {
+					World.maps[this.dimension][this.x][this.y] = [];
 				} // creates a new y array if it is not defined
 				this.p = createGraphics(this.width, this.height, JAVA2D); // creates an image
 				this.t = createGraphics(this.width, this.height, JAVA2D);
@@ -9783,7 +9866,7 @@ var programCode = function (processingInstance) {
 						var interior = 'nothing';
 						for (var i = 0; i < World.interiors.length; i++) {
 							var inter = World.interiors[i];
-							if (inter.x === this.x && inter.y === this.y && inter.z === this.z && inter.ix === x && inter.iy === y) {
+							if (inter.x === this.x && inter.y === this.y && inter.z === this.z && inter.ix === x && inter.iy === y && inter.dimension === this.dimension) {
 								interior = inter;
 								break;
 							}
@@ -9860,14 +9943,17 @@ var programCode = function (processingInstance) {
 				}
 				this.p = this.p.get();
 				this.t = this.t.get();
-				World.maps[this.x][this.y][this.z] = this;
+				World.maps[this.dimension][this.x][this.y][this.z] = this;
 
 				if (Player['loc']['dimension'][this.dimension] === undefined) {
 					Player['loc']['dimension'][this.dimension] = {
-						'x': 192,
-						'y': 192,
-						'wx': 0,
-						'wy': 0,
+						'x': dimensions[this.dimension].x,
+						'y': dimensions[this.dimension].y,
+						'sx': dimensions[this.dimension].sx,
+						'sy': dimensions[this.dimension].sy,
+						'sz': dimensions[this.dimension].sz,
+						'wx': dimensions[this.dimension].x,
+						'wy': dimensions[this.dimension].y,
 						'sub': false
 					};
 				}
@@ -9883,75 +9969,75 @@ var programCode = function (processingInstance) {
 					}
 				}
 			};
-			World.draw = function (x, y, z) {
-				var selMap = World.maps[x][y][z];
+			World.draw = function (x, y, z, dimension) {
+				var selMap = World.maps[dimension][x][y][z];
 				if (Player['loc']['sub'] !== false) {
 					selMap = Player['loc']['sub'];
 				}
 				image(selMap.p, Player['loc']['transition']['x'], Player['loc']['transition']['y']);
-				if (World.maps[x - 1] !== undefined && Player['loc']['shifting'] === 'left') {
-					if (World.maps[x - 1][y] !== undefined) {
-						if (World.maps[x - 1][y][z] !== undefined) {
-							image(World.maps[x - 1][y][z].p, Player['loc']['transition']['x'] - selMap.p.width, 0);
-							for (var i = 0; i < World.maps[x - 1][y][z].storedEntities.length; i++) {
-								var e = World.maps[x - 1][y][z].storedEntities[i];
+				if (World.maps[dimension][x - 1] !== undefined && Player['loc']['shifting'] === 'left') {
+					if (World.maps[dimension][x - 1][y] !== undefined) {
+						if (World.maps[dimension][x - 1][y][z] !== undefined) {
+							image(World.maps[dimension][x - 1][y][z].p, Player['loc']['transition']['x'] - selMap.p.width, 0);
+							for (var i = 0; i < World.maps[dimension][x - 1][y][z].storedEntities.length; i++) {
+								var e = World.maps[dimension][x - 1][y][z].storedEntities[i];
 								if (e.alive) {
 									image(e.image.p, e.x + Player['loc']['transition']['x'] - selMap.p.width - e.image.offset.x, e.y - e.image.offset.y);
 								}
 							}
-							for (var i = 0; i < World.maps[x - 1][y][z].animations.length; i++) {
+							for (var i = 0; i < World.maps[dimension][x - 1][y][z].animations.length; i++) {
 								var a = World.maps[x - 1][y][z].animations[i];
 								a.tile.draw(a.x + Player['loc']['transition']['x'] - selMap.p.width, a.y);
 							}
 						}
 					}
 				}
-				if (World.maps[x + 1] !== undefined && Player['loc']['shifting'] === 'right') {
-					if (World.maps[x + 1][y] !== undefined) {
-						if (World.maps[x + 1][y][z] !== undefined) {
-							image(World.maps[x + 1][y][z].p, Player['loc']['transition']['x'] + selMap.p.width, 0);
-							for (var i = 0; i < World.maps[x + 1][y][z].storedEntities.length; i++) {
-								var e = World.maps[x + 1][y][z].storedEntities[i];
+				if (World.maps[dimension][x + 1] !== undefined && Player['loc']['shifting'] === 'right') {
+					if (World.maps[dimension][x + 1][y] !== undefined) {
+						if (World.maps[dimension][x + 1][y][z] !== undefined) {
+							image(World.maps[dimension][x + 1][y][z].p, Player['loc']['transition']['x'] + selMap.p.width, 0);
+							for (var i = 0; i < World.maps[dimension][x + 1][y][z].storedEntities.length; i++) {
+								var e = World.maps[dimension][x + 1][y][z].storedEntities[i];
 								if (e.alive) {
 									image(e.image.p, e.x + Player['loc']['transition']['x'] + selMap.p.width - e.image.offset.x, e.y - e.image.offset.y);
 								}
 							}
-							for (var i = 0; i < World.maps[x + 1][y][z].animations.length; i++) {
-								var a = World.maps[x + 1][y][z].animations[i];
+							for (var i = 0; i < World.maps[dimension][x + 1][y][z].animations.length; i++) {
+								var a = World.maps[dimension][x + 1][y][z].animations[i];
 								a.tile.draw(a.x + Player['loc']['transition']['x'] + selMap.p.width, a.y);
 							}
 						}
 					}
 				}
-				if (World.maps[x] !== undefined && Player['loc']['shifting'] === 'up') {
-					if (World.maps[x][y - 1] !== undefined) {
-						if (World.maps[x][y - 1][z] !== undefined) {
-							image(World.maps[x][y - 1][z].p, 0, Player['loc']['transition']['y'] - selMap.p.height);
-							for (var i = 0; i < World.maps[x][y - 1][z].storedEntities.length; i++) {
-								var e = World.maps[x][y - 1][z].storedEntities[i];
+				if (World.maps[dimension][x] !== undefined && Player['loc']['shifting'] === 'up') {
+					if (World.maps[dimension][x][y - 1] !== undefined) {
+						if (World.maps[dimension][x][y - 1][z] !== undefined) {
+							image(World.maps[dimension][x][y - 1][z].p, 0, Player['loc']['transition']['y'] - selMap.p.height);
+							for (var i = 0; i < World.maps[dimension][x][y - 1][z].storedEntities.length; i++) {
+								var e = World.maps[dimension][x][y - 1][z].storedEntities[i];
 								if (e.alive) {
 									image(e.image.p, e.x - e.image.offset.x, e.y + Player['loc']['transition']['y'] - selMap.p.height - e.image.offset.y);
 								}
 							}
-							for (var i = 0; i < World.maps[x][y - 1][z].animations.length; i++) {
-								var a = World.maps[x][y - 1][z].animations[i];
+							for (var i = 0; i < World.maps[dimension][x][y - 1][z].animations.length; i++) {
+								var a = World.maps[dimension][x][y - 1][z].animations[i];
 								a.tile.draw(a.x, a.y + Player['loc']['transition']['y'] - selMap.p.height);
 							}
 						}
 					}
 				}
-				if (World.maps[x] !== undefined && Player['loc']['shifting'] === 'down') {
-					if (World.maps[x][y + 1] !== undefined) {
-						if (World.maps[x][y + 1][z] !== undefined) {
-							image(World.maps[x][y + 1][z].p, 0, Player['loc']['transition']['y'] + selMap.p.height);
-							for (var i = 0; i < World.maps[x][y + 1][z].storedEntities.length; i++) {
-								var e = World.maps[x][y + 1][z].storedEntities[i];
+				if (World.maps[dimension][x] !== undefined && Player['loc']['shifting'] === 'down') {
+					if (World.maps[dimension][x][y + 1] !== undefined) {
+						if (World.maps[dimension][x][y + 1][z] !== undefined) {
+							image(World.maps[dimension][x][y + 1][z].p, 0, Player['loc']['transition']['y'] + selMap.p.height);
+							for (var i = 0; i < World.maps[dimension][x][y + 1][z].storedEntities.length; i++) {
+								var e = World.maps[dimension][x][y + 1][z].storedEntities[i];
 								if (e.alive) {
 									image(e.image.p, e.x, e.y + Player['loc']['transition']['y'] + selMap.p.height);
 								}
 							}
-							for (var i = 0; i < World.maps[x][y + 1][z].animations.length; i++) {
-								var a = World.maps[x][y + 1][z].animations[i];
+							for (var i = 0; i < World.maps[dimension][x][y + 1][z].animations.length; i++) {
+								var a = World.maps[dimension][x][y + 1][z].animations[i];
 								a.tile.draw(a.x, a.y + Player['loc']['transition']['y'] + selMap.p.height);
 							}
 						}
@@ -9990,7 +10076,7 @@ var programCode = function (processingInstance) {
 							if (mouseIsPressed && newClick && !Player['actions']['fighting']) {
 								newClick = false;
 								if (distance < 64) {
-									World.maps[Player['loc']['scene']['x']][Player['loc']['scene']['y']][Player['loc']['scene']['z'] + 1].reset();
+									World.maps[Player['loc']['current dimension']][Player['loc']['scene']['x']][Player['loc']['scene']['y']][Player['loc']['scene']['z'] + 1].reset();
 									Player['loc']['scene']['z']++;
 								} else {
 									new Popup('I need to get closer', GUI_TEXT_COLOR, Player['loc']['x'] - REAL_SIZE, Player['loc']['y'], 'exitDistance');
@@ -10002,7 +10088,7 @@ var programCode = function (processingInstance) {
 							if (mouseIsPressed && newClick && !Player['actions']['fighting']) {
 								newClick = false;
 								if (distance < 64) {
-									World.maps[Player['loc']['scene']['x']][Player['loc']['scene']['y']][Player['loc']['scene']['z'] - 1].reset();
+									World.maps[Player['loc']['current dimension']][Player['loc']['scene']['x']][Player['loc']['scene']['y']][Player['loc']['scene']['z'] - 1].reset();
 									Player['loc']['scene']['z']--;
 								} else {
 									new Popup('I need to get closer', GUI_TEXT_COLOR, Player['loc']['x'] - REAL_SIZE, Player['loc']['y'], 'exitDistance');
@@ -10069,36 +10155,36 @@ var programCode = function (processingInstance) {
 					}
 				}
 			};
-			World.topDraw = function (x, y, z) {
-				var selMap = World.maps[x][y][z];
+			World.topDraw = function (x, y, z, dimension) {
+				var selMap = World.maps[dimension][x][y][z];
 				if (Player['loc']['sub'] !== false) {
 					selMap = Player['loc']['sub'];
 				}
-				if (World.maps[x - 1] !== undefined && Player['loc']['shifting'] === 'left') {
-					if (World.maps[x - 1][y] !== undefined) {
-						if (World.maps[x - 1][y][z] !== undefined) {
-							image(World.maps[x - 1][y][z].t, Player['loc']['transition']['x'] - selMap.p.width, 0);
+				if (World.maps[dimension][x - 1] !== undefined && Player['loc']['shifting'] === 'left') {
+					if (World.maps[dimension][x - 1][y] !== undefined) {
+						if (World.maps[dimension][x - 1][y][z] !== undefined) {
+							image(World.maps[dimension][x - 1][y][z].t, Player['loc']['transition']['x'] - selMap.p.width, 0);
 						}
 					}
 				}
-				if (World.maps[x + 1] !== undefined && Player['loc']['shifting'] === 'right') {
-					if (World.maps[x + 1][y] !== undefined) {
-						if (World.maps[x + 1][y][z] !== undefined) {
-							image(World.maps[x + 1][y][z].t, Player['loc']['transition']['x'] + selMap.p.width, 0);
+				if (World.maps[dimension][x + 1] !== undefined && Player['loc']['shifting'] === 'right') {
+					if (World.maps[dimension][x + 1][y] !== undefined) {
+						if (World.maps[dimension][x + 1][y][z] !== undefined) {
+							image(World.maps[dimension][x + 1][y][z].t, Player['loc']['transition']['x'] + selMap.p.width, 0);
 						}
 					}
 				}
-				if (World.maps[x] !== undefined && Player['loc']['shifting'] === 'up') {
-					if (World.maps[x][y - 1] !== undefined) {
-						if (World.maps[x][y - 1][z] !== undefined) {
-							image(World.maps[x][y - 1][z].t, 0, Player['loc']['transition']['y'] - selMap.p.height);
+				if (World.maps[dimension][x] !== undefined && Player['loc']['shifting'] === 'up') {
+					if (World.maps[dimension][x][y - 1] !== undefined) {
+						if (World.maps[dimension][x][y - 1][z] !== undefined) {
+							image(World.maps[dimension][x][y - 1][z].t, 0, Player['loc']['transition']['y'] - selMap.p.height);
 						}
 					}
 				}
-				if (World.maps[x] !== undefined && Player['loc']['shifting'] === 'down') {
-					if (World.maps[x][y + 1] !== undefined) {
-						if (World.maps[x][y + 1][z] !== undefined) {
-							image(World.maps[x][y + 1][z].t, 0, Player['loc']['transition']['y'] + selMap.p.height);
+				if (World.maps[dimension][x] !== undefined && Player['loc']['shifting'] === 'down') {
+					if (World.maps[dimension][x][y + 1] !== undefined) {
+						if (World.maps[dimension][x][y + 1][z] !== undefined) {
+							image(World.maps[dimension][x][y + 1][z].t, 0, Player['loc']['transition']['y'] + selMap.p.height);
 						}
 					}
 				}
@@ -10130,10 +10216,10 @@ var programCode = function (processingInstance) {
 							}
 						}
 						if (e.type === 'quest') {
-							if (QuestGiverCheck(e.name, false) === 'available') {
-								images['exclamation point'].draw(e.x + Player['loc']['transition']['x'], e.y + Player['loc']['transition']['y'] - REAL_SIZE * 3 / 2);
-							} else if (QuestGiverCheck(e.name, false) === 'complete') {
+							if (QuestGiverCheck(e.name, false) === 'complete') {
 								images['question mark'].draw(e.x + Player['loc']['transition']['x'], e.y + Player['loc']['transition']['y'] - REAL_SIZE * 3 / 2);
+							} else if (QuestGiverCheck(e.name, false) === 'available') {
+								images['exclamation point'].draw(e.x + Player['loc']['transition']['x'], e.y + Player['loc']['transition']['y'] - REAL_SIZE * 3 / 2);
 							} else if (QuestGiverCheck(e.name, false) === 'incomplete') {
 								images['gray question mark'].draw(e.x + Player['loc']['transition']['x'], e.y + Player['loc']['transition']['y'] - REAL_SIZE * 3 / 2);
 							}
@@ -10183,14 +10269,16 @@ var programCode = function (processingInstance) {
 																selMap.ix,
 																selMap.iy,
 																e.x / REAL_SIZE,
-																e.y / REAL_SIZE]);
+																e.y / REAL_SIZE,
+																Player['loc']['current dimension']]);
 														} else {
 															Player['actions']['used'].push([
 																selMap.x,
 																selMap.y,
 																selMap.z,
 																e.x / REAL_SIZE,
-																e.y / REAL_SIZE]);
+																e.y / REAL_SIZE,
+																Player['loc']['current dimension']]);
 														}
 													}
 												}
@@ -10207,19 +10295,34 @@ var programCode = function (processingInstance) {
 														selMap.ix,
 														selMap.iy,
 														e.x / REAL_SIZE,
-														e.y / REAL_SIZE]);
+														e.y / REAL_SIZE,
+														Player['loc']['current dimension']]);
 												} else {
 													Player['actions']['used'].push([
 														selMap.x,
 														selMap.y,
 														selMap.z,
 														e.x / REAL_SIZE,
-														e.y / REAL_SIZE]);
+														e.y / REAL_SIZE,
+														Player['loc']['current dimension']]);
 												}
 											}
 										}
 									} else {
 										new Popup('I need to get closer', GUI_TEXT_COLOR, Player['loc']['x'] - REAL_SIZE, Player['loc']['y'], 'interactingDistance');
+									}
+								}
+							}
+						}
+						if (e.type === 'portal') {
+							if (Hover(e.x, e.y, REAL_SIZE, REAL_SIZE)) {
+								createAlert(e.x + REAL_SIZE, e.y, 'click to warp to ' + e.entity.dimension, 'portal' + i);
+								if (mouseIsPressed && newClick) {
+									newClick = false;
+									if (distance < 64) {
+										World.transition.run('warp', e.entity.dimension);
+									} else {
+										new Popup('I need to get closer', GUI_TEXT_COLOR, Player['loc']['x'] - REAL_SIZE, Player['loc']['y'], 'enemyDistance');
 									}
 								}
 							}
@@ -10251,7 +10354,7 @@ var programCode = function (processingInstance) {
 				World.transition.change = 10;
 				if (type === 'enter') {
 					World.transition.destination = function () {
-						var tile = World.maps[Player['loc']['scene']['x']][Player['loc']['scene']['y']][Player['loc']['scene']['z']].tiles[value];
+						var tile = World.maps[Player['loc']['current dimension']][Player['loc']['scene']['x']][Player['loc']['scene']['y']][Player['loc']['scene']['z']].tiles[value];
 						tile.interior.reset();
 						Player['loc']['sub'] = tile.interior;
 						Player['loc']['wx'] = Player['loc']['x'];
@@ -10265,29 +10368,53 @@ var programCode = function (processingInstance) {
 						Player['loc']['x'] = Player['loc']['wx'];
 						Player['loc']['y'] = Player['loc']['wy'];
 					};
+				} else if (type === 'warp') {
+					World.transition.destination = function () {
+						dimensions[value].warp();
+					};
 				}
 			};
 		} // map constructors
 		{
-			var Dimension = function (name, sceneX, sceneY, sceneZ, x, y) {
+			var Dimension = function (name, sx, sy, sz, x, y) {
 				this.name = name;
-				this.sceneX = sceneX;
-				this.sceneY = sceneY;
-				this.sceneZ = sceneZ;
+				this.sx = sx;
+				this.sy = sy;
+				this.sz = sz;
 				this.x = x;
 				this.y = y;
-				dimensions[this.name] = {
-					name: this.name,
-					spawnScene: {
-						x: this.sceneX,
-						y: this.sceneY,
-						z: this.sceneZ
-					},
-					x: this.x,
-					y: this.y
-				};
+				dimensions[this.name] = this;
+			};
+			Dimension.prototype.warp = function () {
+				var d = Player['loc']['dimension'][Player['loc']['current dimension']];
+				d.sx = Player['loc']['scene']['x'];
+				d.sy = Player['loc']['scene']['y'];
+				d.sz = Player['loc']['scene']['z'];
+				d.x = Player['loc']['x'];
+				d.y = Player['loc']['y'];
+				d.wx = Player['loc']['wx'];
+				d.wy = Player['loc']['wy'];
+				d.sub = Player['loc']['sub'];
+				d = Player['loc']['dimension'][this.name];
+				Player['loc']['scene']['x'] = d.sx;
+				Player['loc']['scene']['y'] = d.sy;
+				Player['loc']['scene']['z'] = d.sz;
+				Player['loc']['x'] = d.x;
+				Player['loc']['y'] = d.y;
+				Player['loc']['wx'] = d.wx;
+				Player['loc']['wy'] = d.wy;
+				Player['loc']['sub'] = d.sub;
+				Player['loc']['current dimension'] = this.name;
 			};
 		} // dimension constructor
+		{
+			var Portal = function (name, image, dimension) {
+				this.name = name;
+				this.image = image;
+				this.dimension = dimension;
+				entities['portal'][this.name] = this;
+			};
+		} // portal constructor
 		{
 			var Buff = function (name, image, stat, amount, duration) {
 				this.name = name;
@@ -10329,12 +10456,12 @@ var programCode = function (processingInstance) {
 			};
 		} // buff constructors
 
-		/*                      _       
-		     /\                | |      
-		    /  \   ___ ___  ___| |_ ___ 
-		   / /\ \ / __/ __|/ _ \ __/ __|
-		  / ____ \\__ \__ \  __/ |_\__ \
-		 /_/    \_\___/___/\___|\__|___/                            
+		/*                     _       
+			/\                | |      
+		   /  \   ___ ___  ___| |_ ___ 
+		  / /\ \ / __/ __|/ _ \ __/ __|
+		 / ____ \\__ \__ \  __/ |_\__ \
+		/_/    \_\___/___/\___|\__|___/                            
 		*/
 
 		{
@@ -10355,6 +10482,23 @@ var programCode = function (processingInstance) {
 				'HGGIGHHGHHFGHIGF',
 				'HGIHGHFGHFGGHIGF',
 				'FIHHGFGGFGIGHHIG'], pal, 2, 'grass');
+			new Image([
+				'LONLMMONMMNOLNOM',
+				'ONNLMONLMMNOMLNM',
+				'NNLMONNMOMNNOLNM',
+				'NLMMONLMOMLNOMLM',
+				'LOMMNNLNNONNNMMO',
+				'MNOMNLMNNOMLNMON',
+				'MNOMNLNMNNMMLMON',
+				'MLNOLMNMLNMOMMNN',
+				'MLNNMNLOMLMNMONL',
+				'MMLNNLONMMONMNLO',
+				'OMLNNMONMONNLNLN',
+				'OMMLMONLMONLMLMN',
+				'NMMMMNNLONNLOMMN',
+				'NMMOMNNMNNLMNOML',
+				'NMONMNLMNLMMNOML',
+				'MONNMLMMLMOMNNOM'], pal, 2, 'otherworld grass');
 			new Image([
 				'                ',
 				'       bbb      ',
@@ -10414,6 +10558,31 @@ var programCode = function (processingInstance) {
 				' CCCC„†…††„CCCC ',
 				'  CCCC„……„CCCC  ',
 				'    CCCCCCCC    '], pal, 2, 'treeA');
+			new Image([
+				'       DD       ',
+				'       DD       ',
+				'      DEFD      ',
+				'      DFFD      ',
+				'     DFFEFD     ',
+				'    DEEFFEED    ',
+				'   CEDDEEDEEC   ',
+				'    CDDDCDDC    ',
+				'     CCCDDC     ',
+				'    DDCCCCDD    ',
+				'   DEDDDDDEFD   ',
+				'  DEFFEEEEFFED  ',
+				'   CDEFEFFCDC   ',
+				'    CDEDDDDC    ',
+				'   DDCDCDCCCD   ',
+				'  DEEDCCCCDEFD  ',
+				' DEFEEDEDEFFEDD ',
+				' CDCFFFEFFEEDCC ',
+				'  CCDEEFFEDDCC  ',
+				'  CCCDDCCDCCCC  ',
+				' CCCCC‡ˆˆ‡CCCCC ',
+				' CCCCC‡‰ˆ‡CCCCC ',
+				'  CCCCC‡‡CCCCC  ',
+				'    CCCCCCCC    '], pal, 2, 'pine tree');
 			new Image([
 				'                ',
 				'                ',
@@ -11584,6 +11753,8 @@ var programCode = function (processingInstance) {
 			new Tile(['wood floor', 'barrel'], 'solid', 'R');
 			new Tile(['wood floor', 'wood stove'], 'solid', 'S');
 			new Tile(['grass', 'well'], 'solid', 'T');
+			new Tile(['grass', 'pine tree'], 'solid', 'U');
+			new Tile('otherworld grass', 'walkable', 'V');
 		} // block tiles
 		{
 			new Image([
@@ -17202,11 +17373,13 @@ var programCode = function (processingInstance) {
 					{ 'name': 'rat', 'x': 11, 'y': 6 },
 					{ 'name': 'rat', 'x': 12, 'y': 7 },
 				]
-			})
+			});
 		} // maps
 		{
 			new Dimension('overworld', 0, 0, 0, 288, 256);
 		} // dimensions
+		{
+		} // portals
 		{
 			new Animation([
 				[
@@ -17587,9 +17760,9 @@ var programCode = function (processingInstance) {
 					abilities['slash'].learn();
 					Player['loc']['x'] = dimensions[Player['loc']['current dimension']].x;
 					Player['loc']['y'] = dimensions[Player['loc']['current dimension']].x;
-					Player['loc']['scene']['x'] = dimensions[Player['loc']['current dimension']].spawnScene.x;
-					Player['loc']['scene']['y'] = dimensions[Player['loc']['current dimension']].spawnScene.y;
-					Player['loc']['scene']['z'] = dimensions[Player['loc']['current dimension']].spawnScene.z;
+					Player['loc']['scene']['x'] = dimensions[Player['loc']['current dimension']].sx;
+					Player['loc']['scene']['y'] = dimensions[Player['loc']['current dimension']].sy;
+					Player['loc']['scene']['z'] = dimensions[Player['loc']['current dimension']].sz;
 				}
 				loaded = true;
 			}
@@ -17600,9 +17773,9 @@ var programCode = function (processingInstance) {
 				loadAll();
 			} else {
 				cursor('none');
-				World.draw(Player['loc']['scene']['x'], Player['loc']['scene']['y'], Player['loc']['scene']['z']);
+				World.draw(Player['loc']['scene']['x'], Player['loc']['scene']['y'], Player['loc']['scene']['z'], Player['loc']['current dimension']);
 				Player.movement();
-				World.topDraw(Player['loc']['scene']['x'], Player['loc']['scene']['y'], Player['loc']['scene']['z']);
+				World.topDraw(Player['loc']['scene']['x'], Player['loc']['scene']['y'], Player['loc']['scene']['z'], Player['loc']['current dimension']);
 				Player['bar'].draw(0, height - REAL_SIZE);
 				Player['healthBar'].draw(0, 0, Player['stats']['curFortitude'], Player['stats']['fortitude'], Player['stats']['curEndurance'], Player['stats']['endurance'], Player['stats']['vitality'], Player['stats']['vigor'], Player['stats']['luck'], Player['stats']['strength'], Player['stats']['armor']);
 				Player['xpBar'].draw(0, 480);

@@ -6731,6 +6731,23 @@ var programCode = function (processingInstance) {
                 'HGIHGHFGHFGGHIGF',
                 'FIHHGFGGFGIGHHIG'], pal, 2, 'grass');
             new Image([
+                'LONLMMONMMNOLNOM',
+                'ONNLMONLMMNOMLNM',
+                'NNLMONNMOMNNOLNM',
+                'NLMMONLMOMLNOMLM',
+                'LOMMNNLNNONNNMMO',
+                'MNOMNLMNNOMLNMON',
+                'MNOMNLNMNNMMLMON',
+                'MLNOLMNMLNMOMMNN',
+                'MLNNMNLOMLMNMONL',
+                'MMLNNLONMMONMNLO',
+                'OMLNNMONMONNLNLN',
+                'OMMLMONLMONLMLMN',
+                'NMMMMNNLONNLOMMN',
+                'NMMOMNNMNNLMNOML',
+                'NMONMNLMNLMMNOML',
+                'MONNMLMMLMOMNNOM'], pal, 2, 'otherworld grass');
+            new Image([
                 '                ',
                 '       bbb      ',
                 '     bbccdb     ',
@@ -7985,6 +8002,7 @@ var programCode = function (processingInstance) {
             new Tile(['wood floor', 'wood stove'], 'solid', 'S');
             new Tile(['grass', 'well'], 'solid', 'T');
             new Tile(['grass', 'pine tree'], 'solid', 'U');
+            new Tile('otherworld grass', 'walkable', 'V');
         } // block tiles
         var loadAll = function () {
             fill(0xFFFFFFFF);
@@ -8046,7 +8064,7 @@ var programCode = function (processingInstance) {
                 }
             }
         };
-        var selected = '!';
+        var selected = 'V';
         for (var y = 0; y < 16; y++) {
             map[y] = [];
             for (var x = 0; x < 24; x++) {
